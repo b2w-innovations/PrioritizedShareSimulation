@@ -309,11 +309,11 @@
           <label>Select Unit of Measure (UoM):</label>
           <div class="uom-options">
             <label><input type="radio" name="uom" value="Units" checked /> Units</label>
-            <!-- Pallets option removed -->
             <label><input type="radio" name="uom" value="Value" /> Value</label>
           </div>
         </div>
-        <button class="step-btn" onclick="resetAllSteps()">Reset Everything</button>
+        <button class="step-btn" id="reset-step1-btn">Reset to Step 1</button>
+        <button class="step-btn" id="reset-all-btn">Reset Everything</button>
         <div class="results-section" id="results" style="display:none;">
           <h4>Notes</h4>
           <div id="results-content"></div>
@@ -328,9 +328,12 @@
     let remainingPool = 0;
     const availableInput = document.getElementById('available-qty');
 
-    // -------------- INITIALIZE DATA --------------
-    function initializeData() {
-      items = [
+    // Store the original “defaults” so we can fully reset if needed
+    let defaultItems = [];
+
+    // -------------- INITIALIZE ON LOAD --------------
+    function loadDefaults() {
+      defaultItems = [
         {
           id: 1,
           name: 'WarehousePart 1',
@@ -380,19 +383,39 @@
           unitPrice: 4.0
         }
       ];
+      // Deep‐copy defaults into items
+      items = defaultItems.map(item => ({ ...item }));
+      resetLogic();       // set newNetFlow, newPriority, allocation based on initial netFlow
+      renderBuffers();
+    }
 
+    // -------------- RESET LOGIC TO “BEFORE ANY STEPS” (but keep any user edits to netFlow, MOQ, unitSize) --------------
+    function resetLogic() {
+      remainingPool = parseFloat(availableInput.value) || 0;
       items.forEach(item => {
-        item.origNetFlow = item.netFlow;
+        // Preserve any user‐edited netFlow/moq/unitSize; simply reset allocation & status
         item.newNetFlow = item.netFlow;
         item.newPriority = item.priority;
         item.allocation = 0;
-        // initial “coverage” is % of TOG (for display)
+        // planningPriority now should reflect % of TOG (for display)
         item.planningPriority = item.tog > 0
           ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
           : '100.0';
       });
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('step1-btn').disabled = false;
+      document.getElementById('step2-btn').disabled = true;
+      updateSummaryPanel();
+      renderBuffers();
+    }
 
-      remainingPool = parseFloat(availableInput.value) || 0;
+    // -------------- FULL RESET (“Reset Everything”) --------------
+    function resetEverything() {
+      // Restore from defaultItems
+      items = defaultItems.map(item => ({ ...item }));
+      availableInput.value = 10000;
+      document.querySelector('input[name="uom"][value="Units"]').checked = true;
+      resetLogic();
     }
 
     // -------------- RENDER BUFFERS --------------
@@ -432,7 +455,7 @@
           </div>
         `;
 
-        // Visual bar (unchanged)
+        // Visual bar
         const totalScale = Math.max(item.tog, item.newNetFlow * 1.1);
         const redW    = (item.tor / totalScale) * 100;
         const yellowW = ((item.toy - item.tor) / totalScale) * 100;
@@ -454,7 +477,7 @@
           </div>
         `;
 
-        // Bottom parameter facts (unchanged)
+        // Bottom parameter facts
         const factsHTML = `
           <div class="param-facts">
             <div class="fact-row">Current NF: <span>${item.newNetFlow} units</span></div>
@@ -470,23 +493,24 @@
 
         // Attach event listeners for inline inputs
         document.getElementById(`nf-${idx}`).addEventListener('change', e => {
-          item.netFlow = parseInt(e.target.value, 10) || 0;
-          item.origNetFlow = item.netFlow;
-          item.newNetFlow = item.netFlow;
-          item.newPriority = item.newPriority; // no change yet
-          resetAllSteps();
+          const newVal = parseInt(e.target.value, 10) || 0;
+          item.netFlow = newVal;
+          // Update origNetFlow so indicator adjusts
+          item.origNetFlow = newVal;
+          // Reset logic (but keep this edited value)
+          resetLogic();
         });
         document.getElementById(`moq-${idx}`).addEventListener('change', e => {
-          item.moq = parseInt(e.target.value, 10) || 1;
-          resetAllSteps();
+          const newVal = parseInt(e.target.value, 10) || 1;
+          item.moq = newVal;
+          resetLogic();
         });
         document.getElementById(`om-${idx}`).addEventListener('change', e => {
-          item.unitSize = parseInt(e.target.value, 10) || 1;
-          resetAllSteps();
+          const newVal = parseInt(e.target.value, 10) || 1;
+          item.unitSize = newVal;
+          resetLogic();
         });
       });
-
-      updateSummaryPanel();
     }
 
     function getPriorityColor(priority) {
@@ -501,7 +525,6 @@
 
     // -------------- ALLOCATION HELPER --------------
     function computeAllocation(neededUnits, item) {
-      // Decide how many “pallets” to allocate to satisfy MIN(neededUnits, MOQ), then convert to units/value
       const palletsForNeed = Math.ceil(neededUnits / item.unitSize);
       const palletsForMOQ  = Math.ceil(item.moq / item.unitSize);
       const pallets = Math.max(palletsForNeed, palletsForMOQ);
@@ -515,8 +538,7 @@
       if (uom === 'Units') {
         poolAlloc = allocUnits;
       } else {
-        // Pallets option removed from UI, but logic stays if needed
-        // Here, treat anything other than Units as Value
+        // Treat Value if not Units
         poolAlloc = allocValue;
       }
       return { poolAlloc, allocUnits, allocPallets, allocValue };
@@ -534,42 +556,34 @@
       // 2) While we still have pool left and at least one item below TOY:
       let uom = document.querySelector('input[name="uom"]:checked').value;
       while (true) {
-        // Find all items still below their TOY (top‐of‐yellow)
         const eligible = items.filter(it => it.newNetFlow < it.toy);
         if (!eligible.length) break;                // nothing more to fill
-        // Sort ascending by current coverage (newNetFlow / toy) for balanced fill
         eligible.sort((a, b) => (a.newNetFlow / a.toy) - (b.newNetFlow / b.toy));
         const targetItem = eligible[0];             // lowest‐coverage item
 
-        // “One pallet” step for that item
         const neededUnits = targetItem.toy - targetItem.newNetFlow;
         const { allocUnits, allocPallets, allocValue } =
           computeAllocation(neededUnits, targetItem);
 
-        // But allocate exactly one pallet’s worth of units, whichever UoM
         let stepCost;
         if (uom === 'Units') {
           stepCost = targetItem.unitSize;
         } else {
-          // Value path
           stepCost = targetItem.unitSize * targetItem.unitPrice;
         }
 
         if (remainingPool < stepCost) break;        // can’t afford one more pallet
 
-        // Allocate one pallet of units
         targetItem.allocation += targetItem.unitSize;
         targetItem.newNetFlow += targetItem.unitSize;
         remainingPool -= stepCost;
 
-        // Update that item’s priority color as soon as it crosses TOR or TOY
         if (targetItem.newNetFlow >= targetItem.toy) {
           targetItem.newPriority = 'GREEN';
         } else if (targetItem.newNetFlow >= targetItem.tor && targetItem.newPriority === 'RED') {
           targetItem.newPriority = 'YELLOW';
         }
 
-        // Recompute coverage % of TOG for next iteration
         targetItem.planningPriority = targetItem.tog > 0
           ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
           : '100.0';
@@ -594,7 +608,6 @@
 
     // -------------- STEP 2: BALANCED FILL THROUGH GREEN --------------
     function doStep2() {
-      // 1) Recompute each item’s “coverage % of TOG” for display
       items.forEach(item => {
         item.planningPriority = item.tog > 0
           ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
@@ -603,19 +616,15 @@
 
       let uom = document.querySelector('input[name="uom"]:checked').value;
       while (true) {
-        // Find all items still below their TOG (top‐of‐green)
         const eligible = items.filter(it => it.newNetFlow < it.tog);
-        if (!eligible.length) break;                // nothing left to fill
-        // Sort ascending by current coverage (newNetFlow / tog)
+        if (!eligible.length) break;
         eligible.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
-        const targetItem = eligible[0];             // lowest‐coverage item
+        const targetItem = eligible[0];
 
-        // “One pallet” step for that item
         const neededUnits = targetItem.tog - targetItem.newNetFlow;
         const { allocUnits, allocPallets, allocValue } =
           computeAllocation(neededUnits, targetItem);
 
-        // But allocate exactly one pallet’s worth of units:
         let stepCost;
         if (uom === 'Units') {
           stepCost = targetItem.unitSize;
@@ -623,19 +632,16 @@
           stepCost = targetItem.unitSize * targetItem.unitPrice;
         }
 
-        if (remainingPool < stepCost) break;        // no budget for one more pallet
+        if (remainingPool < stepCost) break;
 
-        // Allocate one pallet
         targetItem.allocation += targetItem.unitSize;
         targetItem.newNetFlow += targetItem.unitSize;
         remainingPool -= stepCost;
 
-        // If it now reaches/passes TOG, mark it “OTOG”
         if (targetItem.newNetFlow >= targetItem.tog) {
           targetItem.newPriority = 'OTOG';
         }
 
-        // Recompute coverage % of TOG for next iteration
         targetItem.planningPriority = targetItem.tog > 0
           ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
           : '100.0';
@@ -648,7 +654,6 @@
     function updateAfterStep2UI() {
       renderBuffers();
       const totalUsed = parseFloat(availableInput.value) - remainingPool;
-      // Recompute “avg % of TOG”:
       const avgPriority = (items.reduce((sum, it) => sum + parseFloat(it.planningPriority), 0) / items.length).toFixed(1);
       const resultsContent = document.getElementById('results-content');
       resultsContent.innerHTML = `
@@ -658,7 +663,7 @@
       `;
     }
 
-    // -------------- SUMMARY PANEL (unchanged) --------------
+    // -------------- SUMMARY PANEL --------------
     function updateSummaryPanel() {
       const uom = document.querySelector('input[name="uom"]:checked').value;
       let sumToRed = 0, sumToYellow = 0, sumToGreen = 0, sumRec = 0;
@@ -676,7 +681,6 @@
         dGreen = sumToGreen;
         dRec = sumRec;
       } else {
-        // Value path for summary
         let vr = 0, vy = 0, vg = 0, vrc = 0;
         items.forEach(item => {
           const nf = item.newNetFlow;
@@ -700,40 +704,35 @@
     function formatRemaining(val) {
       const uom = document.querySelector('input[name="uom"]:checked').value;
       if (uom === 'Units')   return `${Math.round(val)} units`;
-      return `$${val.toFixed(2)}`; // treat anything else as Value
+      return `$${val.toFixed(2)}`;
     }
 
-    // -------------- UoM & AVAILABLE INPUT HANDLERS (updated) --------------
+    // -------------- UoM & AVAILABLE INPUT HANDLERS --------------
     document.querySelectorAll('input[name="uom"]').forEach(radio => {
       radio.addEventListener('change', () => {
         const u = document.querySelector('input[name="uom"]:checked').value;
         document.getElementById('available-label').textContent = `Quantity to Share (in ${u}):`;
         remainingPool = parseFloat(availableInput.value) || 0;
-        resetAllSteps();
+        resetLogic();  // preserve field edits
       });
     });
     function onAvailableChange() {
       remainingPool = parseFloat(availableInput.value) || 0;
-      resetAllSteps();
+      resetLogic();
     }
-
-    // -------------- RESET ALL --------------
-    function resetAllSteps() {
-      initializeData();
-      renderBuffers();
-      document.getElementById('results').style.display = 'none';
-      document.getElementById('step1-btn').disabled = false;
-      document.getElementById('step2-btn').disabled = true;
-      updateSummaryPanel();
-    }
-
-    // -------------- INITIALIZE ON LOAD --------------
-    initializeData();
-    renderBuffers();
 
     // -------------- BUTTON LISTENERS --------------
     document.getElementById('step1-btn').addEventListener('click', doStep1);
     document.getElementById('step2-btn').addEventListener('click', doStep2);
+    document.getElementById('reset-step1-btn').addEventListener('click', () => {
+      // Run resetLogic to revert to “post‐Step1” state (i.e. start state)
+      resetLogic();
+    });
+    document.getElementById('reset-all-btn').addEventListener('click', resetEverything);
+
+    // Initial load
+    loadDefaults();
+
   </script>
 </body>
 </html>
