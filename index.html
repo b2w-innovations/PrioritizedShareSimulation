@@ -1,1009 +1,739 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DDMRP Priority Share Simulation</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-        }
-        
-        .scenario-selector {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .scenario-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .scenario-btn:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-        }
-        
-        .scenario-btn.active {
-            background: #764ba2;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .main-content {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        
-        .buffers-section {
-            flex: 2;
-        }
-        
-        .controls-section {
-            flex: 1;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        
-        .buffers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-        }
-        
-        @media (max-width: 1200px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .buffers-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .buffer-item {
-            margin-bottom: 20px;
-            background: #fff;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            transition: all 0.3s;
-        }
-        
-        .buffer-item.selected {
-            border-color: #667eea;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-        }
-        
-        .buffer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .buffer-visual {
-            height: 40px;
-            background: #f0f0f0;
-            border-radius: 5px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 30px;
-        }
-        
-        .buffer-zone {
-            position: absolute;
-            height: 100%;
-            transition: all 0.5s ease;
-        }
-        
-        .red-zone {
-            background: #ff4444;
-            left: 0;
-            z-index: 1;
-        }
-        
-        .yellow-zone {
-            background: #ffcc00;
-            z-index: 1;
-        }
-        
-        .green-zone {
-            background: #44ff44;
-            z-index: 1;
-        }
-        
-        .blue-zone {
-            background: #00ccff;
-            z-index: 1;
-        }
-        
-        .net-flow-indicator {
-            position: absolute;
-            width: 4px;
-            height: 100%;
-            background: #000;
-            transition: all 0.5s ease;
-            z-index: 10;
-        }
-        
-        .net-flow-indicator::before {
-            content: '▼';
-            position: absolute;
-            top: -20px;
-            left: -6px;
-            font-size: 16px;
-        }
-        
-        .net-flow-label {
-            position: absolute;
-            top: -45px;
-            transform: translateX(-50%);
-            background: white;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            white-space: nowrap;
-        }
-        
-        .net-flow-label.before {
-            background: #e0e0e0;
-        }
-        
-        .net-flow-label.after {
-            background: #00ccff;
-            top: 45px;
-        }
-        
-        .buffer-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .allocation-display {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            display: none;
-        }
-        
-        .allocation-display.show {
-            display: block;
-        }
-        
-        .stats-panel {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        
-        .stats-panel h5 {
-            margin: 0 0 10px 0;
-            color: #333;
-        }
-        
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            color: #666;
-        }
-        
-        .stat-value {
-            font-weight: bold;
-        }
-        
-        .controls h3 {
-            margin-top: 0;
-            color: #333;
-        }
-        
-        .control-group {
-            margin-bottom: 20px;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-        }
-        
-        .control-group input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        
-        .action-btn {
-            width: 100%;
-            padding: 12px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-bottom: 10px;
-            transition: all 0.3s;
-        }
-        
-        .action-btn:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-        }
-        
-        .results-section {
-            background: #f0f8ff;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        
-        .truck-visual {
-            background: #e0e0e0;
-            height: 60px;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            margin: 20px 0;
-        }
-        
-        .truck-section {
-            position: absolute;
-            height: 100%;
-            border-right: 2px solid #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            transition: all 0.5s ease;
-        }
-        
-        .legend {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 3px;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .highlight {
-            animation: pulse 1s ease-in-out;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DDMRP Priority Share Simulation</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    /* 1) The “Overall Summary” banner itself */
+    .summary-banner {
+      display: flex;
+      align-items: center;            /* vertical center of title + values */
+      background: #f5f5f5;            /* light gray background for the banner */
+      border: 1px solid #ddd;         /* subtle border */
+      border-radius: 8px;             /* rounded corners */
+      padding: 10px 20px;             /* some padding top/bottom & left/right */
+      margin: 10px 0 20px;            /* space above/below the banner */
+      gap: 40px;                      /* space between each child element */
+    }
+
+    /* 2) Left‐aligned “Overall Summary” title */
+    .summary-title {
+      flex-shrink: 0;                  /* don’t squash the title below its content size */
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    /* 3) Individual stat items (label + value) */
+    .summary-banner .stat-item {
+      display: flex;
+      flex-direction: column;         /* label on top, value below if that’s preferred */
+      align-items: center;            /* center each pair horizontally */
+      min-width: 120px;               /* ensures each column stays reasonably wide */
+    }
+
+    /* 4) The label (lighter) and the numeric value (bold) */
+    .summary-banner .stat-item .stat-label {
+      font-size: 12px;
+      color: #666;                    /* slightly muted label */
+      margin-bottom: 4px;
+    }
+    .summary-banner .stat-item .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    /* 5) (Optional) If you want all stat‐items to flex evenly, force them to expand */
+    .summary-banner .stat-item {
+      flex: 1;                        /* each stat‐item takes equal share of available width */
+      text-align: center;             /* center text inside each column */
+    }
+    .step-buttons {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .step-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      margin: 0 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    .step-btn:hover {
+      background: #764ba2;
+      transform: translateY(-1px);
+    }
+    .step-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .main-content {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    .buffers-section {
+      flex: 2;
+    }
+    .controls-section {
+      flex: 1;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .control-group {
+      margin-bottom: 20px;
+    }
+    .control-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #666;
+    }
+    .control-group input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .control-group .uom-options {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+    .uom-options input {
+      margin-right: 4px;
+    }
+    .buffers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    .buffer-item {
+      position: relative;
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 10px;
+      transition: all 0.3s;
+    }
+    .buffer-header {
+      margin-bottom: 10px;
+    }
+    .buffer-header h4 {
+      margin: 0 0 5px 0;
+    }
+    .edit-params-inline {
+      display: flex;
+      gap: 12px;           /* or whatever gutter you prefer */
+      margin-bottom: 10px; /* keep your bottom margin */
+    }
+
+    .edit-params-inline .param-inline {
+      flex: 1;             /* each box now takes equal width (1/3 of parent) */
+      min-width: 0;        /* prevents overflow if labels are long */
+      display: flex;
+      flex-direction: column;
+    }
+    .edit-params-inline .param-inline label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 3px;
+    }
+    .edit-params-inline .param-inline input {
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .buffer-visual {
+      height: 40px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .buffer-zone {
+      position: absolute;
+      height: 100%;
+      transition: all 0.5s ease;
+    }
+    .red-zone { background: #ff4444; left: 0; z-index: 1; }
+    .yellow-zone { background: #ffcc00; z-index: 1; }
+    .green-zone { background: #44ff44; z-index: 1; }
+    .blue-zone { background: #00ccff; z-index: 1; }
+    .net-flow-indicator {
+      position: absolute;
+      width: 4px;
+      height: 100%;
+      background: #000;
+      transition: all 0.5s ease;
+      z-index: 10;
+    }
+    .net-flow-indicator::before {
+      content: '▼';
+      position: absolute;
+      top: -20px;
+      left: -6px;
+      font-size: 16px;
+      color: #000;
+    }
+    .orig-net-flow-indicator {
+      position: absolute;
+      width: 2px;
+      height: 100%;
+      background: #888;
+      transition: all 0.5s ease;
+      z-index: 9;
+    }
+    .orig-net-flow-indicator::before {
+      content: '◄';
+      position: absolute;
+      top: -18px;
+      left: -6px;
+      font-size: 14px;
+      color: #888;
+    }
+    .net-flow-label {
+      position: absolute;
+      top: -45px;
+      transform: translateX(-50%);
+      background: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      white-space: nowrap;
+    }
+    .net-flow-label.after { background: #00ccff; top: 45px; }
+    .param-facts {
+      background: #fafafa;
+      border-top: 1px solid #e0e0e0;
+      padding: 10px;
+      font-size: 13px;
+    }
+    .param-facts .fact-row {
+      margin-bottom: 4px;
+      color: #333;
+    }
+    .param-facts .fact-row span {
+      font-weight: bold;
+    }
+    .results-section {
+      background: #f0f8ff;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>DDMRP Priority Share Simulation</h1>
-        <p class="subtitle">Interactive demonstration of Demand Driven MRP priority share logic</p>
-        
-        <div class="scenario-selector">
-            <button class="scenario-btn active" onclick="setScenario('coverage-too-little')">Coverage: Too Little</button>
-            <button class="scenario-btn" onclick="setScenario('coverage-too-much')">Coverage: Too Much</button>
-            <button class="scenario-btn" onclick="setScenario('truckload')">Full Truckload</button>
-            <button class="scenario-btn" onclick="setScenario('min-spend')">Minimum Spend</button>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #00ccff;"></div>
-                <span>Blue Zone (Over TOG)</span>
-            </div>
-        </div>
-        
-        <div class="main-content">
-            <div class="buffers-section">
-                <div class="buffers-grid" id="buffers-container"></div>
-                <div id="truck-visual" class="truck-visual" style="display:none;"></div>
-            </div>
-            
-            <div class="controls-section">
-                <h3>Scenario Controls</h3>
-                
-                <div class="control-group">
-                    <label>Available Quantity:</label>
-                    <input type="number" id="available-qty" value="10000" onchange="updateAvailable()">
-                </div>
-                
-                <div class="control-group" id="constraint-control">
-                    <label id="constraint-label">Target/Constraint:</label>
-                    <input type="number" id="constraint-value" value="10000">
-                </div>
-                
-                <button class="action-btn" onclick="runPriorityShare()">Run Priority Share</button>
-                <button class="action-btn" onclick="resetSimulation()">Reset</button>
-                
-                <div class="results-section" id="results" style="display:none;">
-                    <h4>Results</h4>
-                    <div id="results-content"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #ff4444;"></div>
-                <span>Red Zone (Safety)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #ffcc00;"></div>
-                <span>Yellow Zone (Lead Time)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #44ff44;"></div>
-                <span>Green Zone (Order Qty)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #000; width: 4px;"></div>
-                <span>Net Flow Position</span>
-            </div>
-        </div>
+  <div class="container">
+    <h1>DDMRP Priority Share Simulation</h1>
+
+    <!-- Step buttons (only two steps now) -->
+    <div class="step-buttons">
+      <button id="step1-btn" class="step-btn">Step 1: Fill to Top of YELLOW</button>
+      <button id="step2-btn" class="step-btn" disabled>Step 2: Fill through GREEN</button>
     </div>
 
-    <script>
-        let currentScenario = 'coverage-too-little';
-        let items = [];
-        
-        // Initialize with default data
-        function initializeData() {
-            if (currentScenario === 'coverage-too-little' || currentScenario === 'coverage-too-much') {
-                items = [
-                    { id: 1, name: 'Location 1', netFlow: 7612, tog: 11250, toy: 8750, tor: 3075, priority: 'YELLOW' },
-                    { id: 2, name: 'Location 2', netFlow: 6304, tog: 8640, toy: 6720, tor: 2620, priority: 'YELLOW' },
-                    { id: 3, name: 'Location 3', netFlow: 5506, tog: 6885, toy: 5355, tor: 2085, priority: 'GREEN' },
-                    { id: 4, name: 'Location 4', netFlow: 2705, tog: 9225, toy: 7175, tor: 3075, priority: 'RED' }
-                ];
-            } else if (currentScenario === 'truckload') {
-                items = [
-                    { id: 12, name: 'SKU #12', netFlow: 300, tog: 1700, toy: 1100, tor: 500, priority: 'RED', pallets: 20, unitSize: 50 },
-                    { id: 11, name: 'SKU #11', netFlow: 800, tog: 1600, toy: 1200, tor: 500, priority: 'YELLOW', pallets: 9, unitSize: 44.4 },
-                    { id: 10, name: 'SKU #10', netFlow: 900, tog: 1500, toy: 1100, tor: 400, priority: 'YELLOW', pallets: 8, unitSize: 50 },
-                    { id: 9, name: 'SKU #9', netFlow: 850, tog: 1400, toy: 1000, tor: 400, priority: 'YELLOW', pallets: 8, unitSize: 56.25 },
-                    { id: 6, name: 'SKU #6', netFlow: 1000, tog: 1200, toy: 900, tor: 300, priority: 'GREEN', pallets: 3, unitSize: 33.3 },
-                    { id: 3, name: 'SKU #3', netFlow: 750, tog: 900, toy: 600, tor: 300, priority: 'GREEN', pallets: 2, unitSize: 75 },
-                    { id: 2, name: 'SKU #2', netFlow: 650, tog: 800, toy: 550, tor: 250, priority: 'GREEN', pallets: 2, unitSize: 75 },
-                    { id: 1, name: 'SKU #1', netFlow: 400, tog: 700, toy: 500, tor: 200, priority: 'GREEN', pallets: 2, unitSize: 150 }
-                ];
-            } else if (currentScenario === 'min-spend') {
-                items = [
-                    { id: 12, name: 'SKU #12', netFlow: 300, tog: 1700, toy: 1100, tor: 500, priority: 'RED', spend: 4000, unitPrice: 4 },
-                    { id: 11, name: 'SKU #11', netFlow: 800, tog: 1600, toy: 1200, tor: 500, priority: 'YELLOW', spend: 1500, unitPrice: 3.75 },
-                    { id: 10, name: 'SKU #10', netFlow: 900, tog: 1500, toy: 1100, tor: 400, priority: 'YELLOW', spend: 1000, unitPrice: 2.5 },
-                    { id: 9, name: 'SKU #9', netFlow: 850, tog: 1400, toy: 1000, tor: 400, priority: 'YELLOW', spend: 500, unitPrice: 1.11 },
-                    { id: 6, name: 'SKU #6', netFlow: 1000, tog: 1200, toy: 900, tor: 300, priority: 'GREEN', spend: 2000, unitPrice: 20 },
-                    { id: 3, name: 'SKU #3', netFlow: 750, tog: 900, toy: 600, tor: 300, priority: 'GREEN', spend: 250, unitPrice: 1.67 },
-                    { id: 2, name: 'SKU #2', netFlow: 650, tog: 800, toy: 550, tor: 250, priority: 'GREEN', spend: 250, unitPrice: 1.67 },
-                    { id: 1, name: 'SKU #1', netFlow: 400, tog: 700, toy: 500, tor: 200, priority: 'GREEN', spend: 500, unitPrice: 1.67 }
-                ];
-            }
-            
-            // Reset allocations
-            items.forEach(item => {
-                item.allocation = 0;
-                item.allocatedPallets = 0;
-                item.allocatedSpend = 0;
-                item.newNetFlow = item.netFlow;
-                item.newPriority = item.priority;
-                if (item.toy > 0) {
-                    item.planningPriority = ((item.netFlow / item.toy) * 100).toFixed(1);
-                } else {
-                    item.planningPriority = '100.0';
-                }
-            });
-        }
-        
-        function setScenario(scenario) {
-            currentScenario = scenario;
-            document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // Update controls based on scenario
-            const constraintControl = document.getElementById('constraint-control');
-            const constraintLabel = document.getElementById('constraint-label');
-            const truckVisual = document.getElementById('truck-visual');
-            
-            if (scenario === 'coverage-too-little') {
-                document.getElementById('available-qty').value = 10000;
-                constraintControl.style.display = 'none';
-                truckVisual.style.display = 'none';
-            } else if (scenario === 'coverage-too-much') {
-                document.getElementById('available-qty').value = 20000;
-                constraintControl.style.display = 'none';
-                truckVisual.style.display = 'none';
-            } else if (scenario === 'truckload') {
-                constraintControl.style.display = 'block';
-                constraintLabel.textContent = 'Pallet Positions:';
-                document.getElementById('constraint-value').value = 54;
-                document.getElementById('available-qty').value = 9999;
-                truckVisual.style.display = 'block';
-            } else if (scenario === 'min-spend') {
-                constraintControl.style.display = 'block';
-                constraintLabel.textContent = 'Minimum Spend ($):';
-                document.getElementById('constraint-value').value = 10000;
-                document.getElementById('available-qty').value = 9999;
-                truckVisual.style.display = 'none';
-            }
-            
-            initializeData();
-            renderBuffers();
-            document.getElementById('results').style.display = 'none';
-            
-            // Calculate and set appropriate quantity for priority share
-            setPrefillQuantity();
-        }
-        
-        function setPrefillQuantity() {
-            let suggestedQty = 0;
-            
-            if (currentScenario === 'coverage-too-little') {
-                // Calculate total to TOG minus 30% to create shortage
-                const totalToTog = items.reduce((sum, item) => sum + (item.tog - item.netFlow), 0);
-                suggestedQty = Math.round(totalToTog * 0.7);
-            } else if (currentScenario === 'coverage-too-much') {
-                // Calculate total to TOG plus 50% to create significant excess
-                const totalToTog = items.reduce((sum, item) => sum + (item.tog - item.netFlow), 0);
-                suggestedQty = Math.round(totalToTog * 1.5);
-            } else if (currentScenario === 'truckload') {
-                // Set to a high number to simulate unlimited availability
-                suggestedQty = 50000;
-            } else if (currentScenario === 'min-spend') {
-                // Set to a high number to simulate unlimited availability
-                suggestedQty = 50000;
-            }
-            
-            document.getElementById('available-qty').value = suggestedQty;
-        }
-        
-        function renderBuffers() {
-            const container = document.getElementById('buffers-container');
-            container.innerHTML = '';
-            
-            items.forEach(item => {
-                const bufferEl = createBufferElement(item);
-                container.appendChild(bufferEl);
-            });
-        }
-        
-		function createBufferElement(item) {
-			const div = document.createElement('div');
-			div.className = 'buffer-item';
-			div.dataset.id = item.id;
-			
-			const redWidth    = (item.tor  / item.tog) * 100;
-			const yellowWidth = ((item.toy - item.tor) / item.tog) * 100;
-			const greenWidth  = ((item.tog - item.toy) / item.tog) * 100;
-			const netFlowPos  = (item.netFlow / item.tog) * 100;
-			
-			const netFlowPercent = item.toy > 0
-				? ((item.netFlow / item.toy) * 100).toFixed(1)
-				: '100.0';
-			
-			const orderToTog = item.tog - item.netFlow;
-			const blueLeft  = redWidth + yellowWidth + greenWidth;
-			const blueWidth = 0;
-			
-			div.innerHTML = `
-				<div class="buffer-header">
-					<h4>${item.name}</h4>
-					<span style="color: ${getPriorityColor(item.priority)}; font-weight: bold;">
-						${item.priority} (${netFlowPercent}%)
-					</span>
-				</div>
-				<div class="buffer-visual">
-					<div class="buffer-zone red-zone"   style="width: ${redWidth}%;"></div>
-					<div class="buffer-zone yellow-zone" style="left: ${redWidth}%; width: ${yellowWidth}%;"></div>
-					<div class="buffer-zone green-zone"  style="left: ${redWidth + yellowWidth}%; width: ${greenWidth}%;"></div>
-					<div class="buffer-zone blue-zone"   style="left: ${blueLeft}%; width: ${blueWidth}%;"></div>
-					<!-- note the added closing quote after ${netFlowPos}%: -->
-					<div class="net-flow-indicator" style="left: ${netFlowPos}%;"></div>
-				</div>
-				<div class="buffer-stats">
-					<span>Net Flow: ${item.netFlow}</span>
-					<span>TOG: ${item.tog}</span>
-					<span>TOY: ${item.toy}</span>
-					<span>TOR: ${item.tor}</span>
-				</div>
-				<div class="stats-panel">
-					<h5>Buffer Statistics</h5>
-					<div class="stat-row">
-						<span class="stat-label">Order to TOG:</span>
-						<span class="stat-value">${orderToTog} units</span>
-					</div>
-					<div class="stat-row">
-						<span class="stat-label">Buffer Status:</span>
-						<span class="stat-value" style="color: ${getPriorityColor(item.priority)};">${item.priority}</span>
-					</div>
-					<div class="stat-row">
-						<span class="stat-label">Coverage %:</span>
-						<span class="stat-value">${netFlowPercent}%</span>
-					</div>
-					${currentScenario === 'truckload' ? `
-					<div class="stat-row">
-						<span class="stat-label">Pallets Needed:</span>
-						<span class="stat-value">${Math.ceil(orderToTog / (item.unitSize || 50))}</span>
-					</div>` : ''}
-					${currentScenario === 'min-spend' ? `
-					<div class="stat-row">
-						<span class="stat-label">Cost to TOG:</span>
-						<span class="stat-value">${(orderToTog * (item.unitPrice || 1)).toFixed(2)}</span>
-					</div>` : ''}
-				</div>
-				<div class="allocation-display" id="allocation-${item.id}"></div>
-			`;
-			return div;
-		}
+    <div class="summary-banner">
+      <div class="summary-title">Overall Summary</div>
 
-        
-        function getPriorityColor(priority) {
-            switch(priority) {
-                case 'RED': return '#ff4444';
-                case 'YELLOW': return '#ffcc00';
-                case 'GREEN': return '#44ff44';
-                case 'OTOG': return '#00ccff';
-                default: return '#666';
-            }
+      <div class="stat-item">
+        <span class="stat-label">To Top of RED:</span>
+        <span id="sum-to-red" class="stat-value">0</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">To Top of YELLOW:</span>
+        <span id="sum-to-yellow" class="stat-value">0</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">To Top of GREEN:</span>
+        <span id="sum-to-green" class="stat-value">0</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">Recommended:</span>
+        <span id="sum-recommended" class="stat-value">0</span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="buffers-section">
+        <div class="buffers-grid" id="buffers-container"></div>
+      </div>
+
+      <div class="controls-section">
+        <h3>Scenario Controls</h3>
+        <div class="control-group">
+          <label id="available-label">Quantity to Share (in Units):</label>
+          <input type="number" id="available-qty" value="10000" oninput="onAvailableChange()" />
+        </div>
+        <div class="control-group">
+          <label>Select Unit of Measure (UoM):</label>
+          <div class="uom-options">
+            <label><input type="radio" name="uom" value="Units" checked /> Units</label>
+            <!-- Pallets option removed -->
+            <label><input type="radio" name="uom" value="Value" /> Value</label>
+          </div>
+        </div>
+        <button class="step-btn" onclick="resetAllSteps()">Reset Everything</button>
+        <div class="results-section" id="results" style="display:none;">
+          <h4>Notes</h4>
+          <div id="results-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // GLOBALS
+    let items = [];
+    let remainingPool = 0;
+    const availableInput = document.getElementById('available-qty');
+
+    // -------------- INITIALIZE DATA --------------
+    function initializeData() {
+      items = [
+        {
+          id: 1,
+          name: 'WarehousePart 1',
+          netFlow: 7612,
+          tog: 11250,
+          toy: 8750,
+          tor: 3075,
+          priority: 'YELLOW',
+          moq: 1,
+          unitSize: 1,
+          unitPrice: 2.5
+        },
+        {
+          id: 2,
+          name: 'WarehousePart 2',
+          netFlow: 6304,
+          tog: 8640,
+          toy: 6720,
+          tor: 2620,
+          priority: 'YELLOW',
+          moq: 1,
+          unitSize: 1,
+          unitPrice: 3.0
+        },
+        {
+          id: 3,
+          name: 'WarehousePart 3',
+          netFlow: 5506,
+          tog: 6885,
+          toy: 5355,
+          tor: 2085,
+          priority: 'GREEN',
+          moq: 1,
+          unitSize: 1,
+          unitPrice: 1.75
+        },
+        {
+          id: 4,
+          name: 'WarehousePart 4',
+          netFlow: 2705,
+          tog: 9225,
+          toy: 7175,
+          tor: 3075,
+          priority: 'RED',
+          moq: 1,
+          unitSize: 1,
+          unitPrice: 4.0
         }
-        
-        function runPriorityShare() {
-            // Initialize all items before running any scenario
-            items.forEach(item => {
-                item.allocation = 0;
-                item.allocatedPallets = 0;
-                item.allocatedSpend = 0;
-                item.newNetFlow = item.netFlow;
-                item.newPriority = item.priority;
-                if (item.toy > 0) {
-                    item.planningPriority = ((item.netFlow / item.toy) * 100).toFixed(1);
-                } else {
-                    item.planningPriority = '100.0';
-                }
-            });
-            
-            const available = parseInt(document.getElementById('available-qty').value);
-            
-            if (currentScenario === 'coverage-too-little') {
-                runCoverageTooLittle(available);
-            } else if (currentScenario === 'coverage-too-much') {
-                runCoverageTooMuch(available);
-            } else if (currentScenario === 'truckload') {
-                runTruckloadOptimization(available);
-            } else if (currentScenario === 'min-spend') {
-                runMinSpendOptimization(available);
-            }
-            
-            updateDisplay();
+      ];
+
+      items.forEach(item => {
+        item.origNetFlow = item.netFlow;
+        item.newNetFlow = item.netFlow;
+        item.newPriority = item.priority;
+        item.allocation = 0;
+        // initial “coverage” is % of TOG (for display)
+        item.planningPriority = item.tog > 0
+          ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
+          : '100.0';
+      });
+
+      remainingPool = parseFloat(availableInput.value) || 0;
+    }
+
+    // -------------- RENDER BUFFERS --------------
+    function renderBuffers() {
+      const container = document.getElementById('buffers-container');
+      container.innerHTML = '';
+
+      items.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'buffer-item';
+
+        // Editable parameters inline
+        const editHTML = `
+          <div class="edit-params-inline">
+            <div class="param-inline">
+              <label>Net Flow:</label>
+              <input type="number" id="nf-${idx}" value="${item.netFlow}" min="0"/>
+            </div>
+            <div class="param-inline">
+              <label>MOQ:</label>
+              <input type="number" id="moq-${idx}" value="${item.moq}" min="1"/>
+            </div>
+            <div class="param-inline">
+              <label>Order Multiple:</label>
+              <input type="number" id="om-${idx}" value="${item.unitSize}" min="1"/>
+            </div>
+          </div>
+        `;
+
+        // Buffer header with name and updated % of TOG
+        const headerHTML = `
+          <div class="buffer-header">
+            <h4>${item.name}</h4>
+            <span style="color: ${getPriorityColor(item.newPriority)}; font-weight: bold;">
+              ${item.newPriority} (${item.planningPriority}%)
+            </span>
+          </div>
+        `;
+
+        // Visual bar (unchanged)
+        const totalScale = Math.max(item.tog, item.newNetFlow * 1.1);
+        const redW    = (item.tor / totalScale) * 100;
+        const yellowW = ((item.toy - item.tor) / totalScale) * 100;
+        const greenW  = ((item.tog - item.toy) / totalScale) * 100;
+        const overflow= Math.max(0, item.newNetFlow - item.tog);
+        const blueW   = (overflow / totalScale) * 100;
+        const leftBlue= redW + yellowW + greenW;
+        const origPos = (item.origNetFlow / totalScale) * 100;
+        const newPos  = (item.newNetFlow / totalScale) * 100;
+
+        const visualHTML = `
+          <div class="buffer-visual">
+            <div class="buffer-zone red-zone"    style="width: ${redW}%;"></div>
+            <div class="buffer-zone yellow-zone" style="left: ${redW}%; width: ${yellowW}%;"></div>
+            <div class="buffer-zone green-zone"  style="left: ${redW + yellowW}%; width: ${greenW}%;"></div>
+            <div class="buffer-zone blue-zone"   style="left: ${leftBlue}%; width: ${blueW}%;"></div>
+            <div class="orig-net-flow-indicator" style="left: ${origPos}%;"></div>
+            <div class="net-flow-indicator"      style="left: ${newPos}%;"></div>
+          </div>
+        `;
+
+        // Bottom parameter facts (unchanged)
+        const factsHTML = `
+          <div class="param-facts">
+            <div class="fact-row">Current NF: <span>${item.newNetFlow} units</span></div>
+            <div class="fact-row">Top of RED (TOR): <span>${item.tor} units</span></div>
+            <div class="fact-row">Top of YELLOW (TOY): <span>${item.toy} units</span></div>
+            <div class="fact-row">Top of GREEN (TOG): <span>${item.tog} units</span></div>
+            <div class="fact-row">Unit Price: <span>$${item.unitPrice.toFixed(2)}</span></div>
+          </div>
+        `;
+
+        div.innerHTML = editHTML + headerHTML + visualHTML + factsHTML;
+        container.appendChild(div);
+
+        // Attach event listeners for inline inputs
+        document.getElementById(`nf-${idx}`).addEventListener('change', e => {
+          item.netFlow = parseInt(e.target.value, 10) || 0;
+          item.origNetFlow = item.netFlow;
+          item.newNetFlow = item.netFlow;
+          item.newPriority = item.newPriority; // no change yet
+          resetAllSteps();
+        });
+        document.getElementById(`moq-${idx}`).addEventListener('change', e => {
+          item.moq = parseInt(e.target.value, 10) || 1;
+          resetAllSteps();
+        });
+        document.getElementById(`om-${idx}`).addEventListener('change', e => {
+          item.unitSize = parseInt(e.target.value, 10) || 1;
+          resetAllSteps();
+        });
+      });
+
+      updateSummaryPanel();
+    }
+
+    function getPriorityColor(priority) {
+      switch(priority) {
+        case 'RED':    return '#ff4444';
+        case 'YELLOW': return '#ffcc00';
+        case 'GREEN':  return '#44ff44';
+        case 'OTOG':   return '#00ccff';
+        default:       return '#666';
+      }
+    }
+
+    // -------------- ALLOCATION HELPER --------------
+    function computeAllocation(neededUnits, item) {
+      // Decide how many “pallets” to allocate to satisfy MIN(neededUnits, MOQ), then convert to units/value
+      const palletsForNeed = Math.ceil(neededUnits / item.unitSize);
+      const palletsForMOQ  = Math.ceil(item.moq / item.unitSize);
+      const pallets = Math.max(palletsForNeed, palletsForMOQ);
+
+      const allocUnits   = pallets * item.unitSize;
+      const allocPallets = pallets;
+      const allocValue   = allocUnits * item.unitPrice;
+
+      const uom = document.querySelector('input[name="uom"]:checked').value;
+      let poolAlloc;
+      if (uom === 'Units') {
+        poolAlloc = allocUnits;
+      } else {
+        // Pallets option removed from UI, but logic stays if needed
+        // Here, treat anything other than Units as Value
+        poolAlloc = allocValue;
+      }
+      return { poolAlloc, allocUnits, allocPallets, allocValue };
+    }
+
+    // -------------- STEP 1: BALANCED FILL TO TOP‐OF‐YELLOW --------------
+    function doStep1() {
+      // 1) Recompute each item’s “coverage % of TOG” for display
+      items.forEach(item => {
+        item.planningPriority = item.tog > 0
+          ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
+          : '100.0';
+      });
+
+      // 2) While we still have pool left and at least one item below TOY:
+      let uom = document.querySelector('input[name="uom"]:checked').value;
+      while (true) {
+        // Find all items still below their TOY (top‐of‐yellow)
+        const eligible = items.filter(it => it.newNetFlow < it.toy);
+        if (!eligible.length) break;                // nothing more to fill
+        // Sort ascending by current coverage (newNetFlow / toy) for balanced fill
+        eligible.sort((a, b) => (a.newNetFlow / a.toy) - (b.newNetFlow / b.toy));
+        const targetItem = eligible[0];             // lowest‐coverage item
+
+        // “One pallet” step for that item
+        const neededUnits = targetItem.toy - targetItem.newNetFlow;
+        const { allocUnits, allocPallets, allocValue } =
+          computeAllocation(neededUnits, targetItem);
+
+        // But allocate exactly one pallet’s worth of units, whichever UoM
+        let stepCost;
+        if (uom === 'Units') {
+          stepCost = targetItem.unitSize;
+        } else {
+          // Value path
+          stepCost = targetItem.unitSize * targetItem.unitPrice;
         }
-        
-        function runCoverageTooLittle(available) {
-            let remaining = available;
-            
-            // Initialize allocations
-            items.forEach(item => {
-                item.allocation = 0;
-            });
-            
-            // Step 1: Bring RED items to TOY+1
-            const redItems = items.filter(item => item.priority === 'RED');
-            redItems.forEach(item => {
-                const needed = item.tor + 1 - item.netFlow;
-                const allocated = Math.min(needed, remaining);
-                item.allocation = Math.round(allocated);
-                item.newNetFlow = item.netFlow + item.allocation;
-                remaining -= item.allocation;
-                
-                if (item.newNetFlow > item.tor) {
-                    item.newPriority = 'YELLOW';
-                }
-            });
-            
-            // Step 2: Bring YELLOW items to TOY+1
-            const yellowItems = items.filter(item => item.priority === 'YELLOW' || item.newPriority === 'YELLOW');
-            yellowItems.forEach(item => {
-                const needed = item.toy + 1 - item.newNetFlow;
-                const allocated = Math.min(needed, remaining);
-                const roundedAllocation = Math.round(allocated);
-                item.allocation = (item.allocation || 0) + roundedAllocation;
-                item.newNetFlow += roundedAllocation;
-                remaining -= roundedAllocation;
-                
-                if (item.newNetFlow > item.toy) {
-                    item.newPriority = 'GREEN';
-                }
-            });
-            
-            // Step 3: Distribute remaining equally
-            if (remaining > 0) {
-                const totalNeededToTog = items.reduce((sum, item) => sum + (item.tog - item.newNetFlow), 0);
-                items.forEach(item => {
-                    const proportion = (item.tog - item.newNetFlow) / totalNeededToTog;
-                    const additionalAllocation = Math.round(remaining * proportion);
-                    item.allocation = (item.allocation || 0) + additionalAllocation;
-                    item.newNetFlow += additionalAllocation;
-                });
-            }
-            
-            // Calculate final planning priorities
-            items.forEach(item => {
-                if (item.toy > 0) {
-                    item.planningPriority = ((item.newNetFlow / item.toy) * 100).toFixed(1);
-                } else {
-                    item.planningPriority = '100.0';
-                }
-            });
+
+        if (remainingPool < stepCost) break;        // can’t afford one more pallet
+
+        // Allocate one pallet of units
+        targetItem.allocation += targetItem.unitSize;
+        targetItem.newNetFlow += targetItem.unitSize;
+        remainingPool -= stepCost;
+
+        // Update that item’s priority color as soon as it crosses TOR or TOY
+        if (targetItem.newNetFlow >= targetItem.toy) {
+          targetItem.newPriority = 'GREEN';
+        } else if (targetItem.newNetFlow >= targetItem.tor && targetItem.newPriority === 'RED') {
+          targetItem.newPriority = 'YELLOW';
         }
-        
-        function runCoverageTooMuch(available) {
-            let remaining = available;
-            
-            // Initialize allocations
-            items.forEach(item => {
-                item.allocation = 0;
-            });
-            
-            // Step 1: Bring all to TOG
-            items.forEach(item => {
-                const needed = item.tog - item.netFlow;
-                item.allocation = Math.round(needed);
-                item.newNetFlow = item.tog;
-                remaining -= item.allocation;
-            });
-            
-            // Step 2: Distribute excess equally
-            if (remaining > 0) {
-                const avgExcess = Math.floor(remaining / items.length);
-                items.forEach(item => {
-                    item.allocation += avgExcess;
-                    item.newNetFlow += avgExcess;
-                    item.newPriority = 'OTOG';
-                });
-            }
-            
-            // Calculate final planning priorities
-            items.forEach(item => {
-                if (item.toy > 0) {
-                    item.planningPriority = ((item.newNetFlow / item.toy) * 100).toFixed(1);
-                } else {
-                    item.planningPriority = '100.0';
-                }
-                
-                // Ensure priority is set correctly
-                if (item.newNetFlow > item.tog) {
-                    item.newPriority = 'OTOG';
-                } else if (item.newNetFlow > item.toy) {
-                    item.newPriority = 'GREEN';
-                } else if (item.newNetFlow > item.tor) {
-                    item.newPriority = 'YELLOW';
-                } else {
-                    item.newPriority = 'RED';
-                }
-            });
+
+        // Recompute coverage % of TOG for next iteration
+        targetItem.planningPriority = targetItem.tog > 0
+          ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
+          : '100.0';
+      }
+
+      updateAfterStep1UI();
+      document.getElementById('step1-btn').disabled = true;
+      document.getElementById('step2-btn').disabled = false;
+    }
+
+    function updateAfterStep1UI() {
+      renderBuffers();
+      const used = formatRemaining(parseFloat(availableInput.value) - remainingPool);
+      const resultsDiv = document.getElementById('results');
+      const resultsContent = document.getElementById('results-content');
+      resultsDiv.style.display = 'block';
+      resultsContent.innerHTML = `
+        <p><strong>Step 1 complete:</strong> Balanced fill to Top of YELLOW (or as far as possible).<br/>
+        Used: <strong>${used}</strong>. Remaining: <strong>${formatRemaining(remainingPool)}</strong>.</p>
+      `;
+    }
+
+    // -------------- STEP 2: BALANCED FILL THROUGH GREEN --------------
+    function doStep2() {
+      // 1) Recompute each item’s “coverage % of TOG” for display
+      items.forEach(item => {
+        item.planningPriority = item.tog > 0
+          ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
+          : '100.0';
+      });
+
+      let uom = document.querySelector('input[name="uom"]:checked').value;
+      while (true) {
+        // Find all items still below their TOG (top‐of‐green)
+        const eligible = items.filter(it => it.newNetFlow < it.tog);
+        if (!eligible.length) break;                // nothing left to fill
+        // Sort ascending by current coverage (newNetFlow / tog)
+        eligible.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
+        const targetItem = eligible[0];             // lowest‐coverage item
+
+        // “One pallet” step for that item
+        const neededUnits = targetItem.tog - targetItem.newNetFlow;
+        const { allocUnits, allocPallets, allocValue } =
+          computeAllocation(neededUnits, targetItem);
+
+        // But allocate exactly one pallet’s worth of units:
+        let stepCost;
+        if (uom === 'Units') {
+          stepCost = targetItem.unitSize;
+        } else {
+          stepCost = targetItem.unitSize * targetItem.unitPrice;
         }
-        
-        function runTruckloadOptimization(available) {
-            const maxPallets = parseInt(document.getElementById('constraint-value').value);
-            let usedPallets = 0;
-            
-            // Initialize allocations
-            items.forEach(item => {
-                item.allocation = 0;
-                item.allocatedPallets = 0;
-            });
-            
-            // Sort by priority depth (RED first, then by net flow position)
-            const sortedItems = [...items].sort((a, b) => {
-                if (a.priority !== b.priority) {
-                    const priorityOrder = { RED: 0, YELLOW: 1, GREEN: 2 };
-                    return priorityOrder[a.priority] - priorityOrder[b.priority];
-                }
-                return (a.netFlow / a.toy) - (b.netFlow / b.toy);
-            });
-            
-            // Fill truck based on priority
-            sortedItems.forEach(item => {
-                if (usedPallets < maxPallets) {
-                    const needed = item.tog - item.netFlow;
-                    const neededPallets = Math.ceil(needed / item.unitSize);
-                    const availablePallets = maxPallets - usedPallets;
-                    const allocatedPallets = Math.min(neededPallets, availablePallets);
-                    
-                    item.allocation = Math.round(allocatedPallets * item.unitSize);
-                    item.newNetFlow = item.netFlow + item.allocation;
-                    usedPallets += allocatedPallets;
-                    item.allocatedPallets = allocatedPallets;
-                    
-                    // Update priority
-                    if (item.newNetFlow <= item.tor) {
-                        item.newPriority = 'RED';
-                    } else if (item.newNetFlow <= item.toy) {
-                        item.newPriority = 'YELLOW';
-                    } else if (item.newNetFlow <= item.tog) {
-                        item.newPriority = 'GREEN';
-                    } else {
-                        item.newPriority = 'OTOG';
-                    }
-                }
-            });
-            
-            updateTruckVisual(sortedItems.filter(item => item.allocatedPallets > 0));
+
+        if (remainingPool < stepCost) break;        // no budget for one more pallet
+
+        // Allocate one pallet
+        targetItem.allocation += targetItem.unitSize;
+        targetItem.newNetFlow += targetItem.unitSize;
+        remainingPool -= stepCost;
+
+        // If it now reaches/passes TOG, mark it “OTOG”
+        if (targetItem.newNetFlow >= targetItem.tog) {
+          targetItem.newPriority = 'OTOG';
         }
-        
-        function runMinSpendOptimization(available) {
-            const minSpend = parseInt(document.getElementById('constraint-value').value);
-            let currentSpend = 0;
-            
-            // Initialize allocations
-            items.forEach(item => {
-                item.allocation = 0;
-                item.allocatedSpend = 0;
-            });
-            
-            // Sort by priority depth
-            const sortedItems = [...items].sort((a, b) => {
-                if (a.priority !== b.priority) {
-                    const priorityOrder = { RED: 0, YELLOW: 1, GREEN: 2 };
-                    return priorityOrder[a.priority] - priorityOrder[b.priority];
-                }
-                return (a.netFlow / a.toy) - (b.netFlow / b.toy);
-            });
-            
-            // Fill based on spend constraint
-            sortedItems.forEach(item => {
-                if (currentSpend < minSpend) {
-                    const needed = item.tog - item.netFlow;
-                    const neededSpend = needed * item.unitPrice;
-                    const remainingBudget = minSpend - currentSpend;
-                    
-                    if (neededSpend <= remainingBudget) {
-                        item.allocation = Math.round(needed);
-                        item.allocatedSpend = item.allocation * item.unitPrice;
-                    } else {
-                        item.allocation = Math.floor(remainingBudget / item.unitPrice);
-                        item.allocatedSpend = item.allocation * item.unitPrice;
-                    }
-                    
-                    item.newNetFlow = item.netFlow + item.allocation;
-                    currentSpend += item.allocatedSpend;
-                    
-                    // Update priority
-                    if (item.newNetFlow <= item.tor) {
-                        item.newPriority = 'RED';
-                    } else if (item.newNetFlow <= item.toy) {
-                        item.newPriority = 'YELLOW';
-                    } else if (item.newNetFlow <= item.tog) {
-                        item.newPriority = 'GREEN';
-                    } else {
-                        item.newPriority = 'OTOG';
-                    }
-                }
-            });
-        }
-        
-        function updateTruckVisual(allocatedItems) {
-            const truckVisual = document.getElementById('truck-visual');
-            const maxPallets = parseInt(document.getElementById('constraint-value').value);
-            truckVisual.innerHTML = '';
-            
-            let currentPos = 0;
-            allocatedItems.forEach(item => {
-                const width = (item.allocatedPallets / maxPallets) * 100;
-                const section = document.createElement('div');
-                section.className = 'truck-section';
-                section.style.left = currentPos + '%';
-                section.style.width = width + '%';
-                section.style.background = getPriorityColor(item.priority);
-                section.textContent = `${item.name} (${item.allocatedPallets})`;
-                truckVisual.appendChild(section);
-                currentPos += width;
-            });
-        }
-        
-		function updateDisplay() {
-		  items.forEach(item => {
-			const bufferEl = document.querySelector(`.buffer-item[data-id="${item.id}"]`);
-			bufferEl.classList.add('highlight');
 
-			// 1. If newNetFlow > tog, bump totalScale up to 110% of newNetFlow.
-			//    Otherwise totalScale = tog (so blue is zero).
-			const desiredMax = Math.max(item.tog, item.newNetFlow * 1.1);
-			const totalScale = desiredMax;
+        // Recompute coverage % of TOG for next iteration
+        targetItem.planningPriority = targetItem.tog > 0
+          ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
+          : '100.0';
+      }
 
-			// 2. Compute each zone’s percentage of that totalScale
-			const redW    = (item.tor  / totalScale) * 100;
-			const yellowW = ((item.toy - item.tor) / totalScale) * 100;
-			const greenW  = ((item.tog - item.toy) / totalScale) * 100;
-			// overflow = how much sits above TOG (could be 0 if newNetFlow<=tog)
-			const overflow= Math.max(0, item.newNetFlow - item.tog);
-			const blueW   = (overflow / totalScale) * 100;
+      updateAfterStep2UI();
+      document.getElementById('step2-btn').disabled = true;
+    }
 
-			// 3. Grab each zone element
-			const redZone    = bufferEl.querySelector('.red-zone');
-			const yellowZone = bufferEl.querySelector('.yellow-zone');
-			const greenZone  = bufferEl.querySelector('.green-zone');
-			const blueZone   = bufferEl.querySelector('.blue-zone');
+    function updateAfterStep2UI() {
+      renderBuffers();
+      const totalUsed = parseFloat(availableInput.value) - remainingPool;
+      // Recompute “avg % of TOG”:
+      const avgPriority = (items.reduce((sum, it) => sum + parseFloat(it.planningPriority), 0) / items.length).toFixed(1);
+      const resultsContent = document.getElementById('results-content');
+      resultsContent.innerHTML = `
+        <p><strong>Step 2 complete:</strong> Balanced fill through GREEN (or as far as possible).<br/>
+        Used: <strong>${formatRemaining(totalUsed)}</strong>. Remaining: <strong>${formatRemaining(remainingPool)}</strong>.<br/>
+        Avg % of TOG: <strong>${avgPriority}%</strong>.</p>
+      `;
+    }
 
-			// 4. Apply new widths/positions
-			redZone.style.width    = `${redW}%`;
-			yellowZone.style.left  = `${redW}%`;
-			yellowZone.style.width = `${yellowW}%`;
-			greenZone.style.left   = `${redW + yellowW}%`;
-			greenZone.style.width  = `${greenW}%`;
-			// blue starts right after green
-			blueZone.style.left    = `${redW + yellowW + greenW}%`;
-			blueZone.style.width   = `${blueW}%`;
+    // -------------- SUMMARY PANEL (unchanged) --------------
+    function updateSummaryPanel() {
+      const uom = document.querySelector('input[name="uom"]:checked').value;
+      let sumToRed = 0, sumToYellow = 0, sumToGreen = 0, sumRec = 0;
+      items.forEach(item => {
+        const nf = item.newNetFlow;
+        if (nf < item.tor) sumToRed += (item.tor - nf);
+        if (nf < item.toy) sumToYellow += (item.toy - nf);
+        if (nf < item.tog) sumToGreen += (item.tog - nf);
+        if (nf < item.toy) sumRec += (item.tog - nf);
+      });
+      let dRed, dYellow, dGreen, dRec;
+      if (uom === 'Units') {
+        dRed = sumToRed;
+        dYellow = sumToYellow;
+        dGreen = sumToGreen;
+        dRec = sumRec;
+      } else {
+        // Value path for summary
+        let vr = 0, vy = 0, vg = 0, vrc = 0;
+        items.forEach(item => {
+          const nf = item.newNetFlow;
+          const price = item.unitPrice;
+          if (nf < item.tor) vr += (item.tor - nf) * price;
+          if (nf < item.toy) vy += (item.toy - nf) * price;
+          if (nf < item.tog) vg += (item.tog - nf) * price;
+          if (nf < item.toy) vrc += (item.tog - nf) * price;
+        });
+        dRed = `$${vr.toFixed(2)}`;
+        dYellow = `$${vy.toFixed(2)}`;
+        dGreen = `$${vg.toFixed(2)}`;
+        dRec = `$${vrc.toFixed(2)}`;
+      }
+      document.getElementById('sum-to-red').textContent    = dRed;
+      document.getElementById('sum-to-yellow').textContent = dYellow;
+      document.getElementById('sum-to-green').textContent  = dGreen;
+      document.getElementById('sum-recommended').textContent = dRec;
+    }
 
-			// 5. Place the arrow at (newNetFlow/totalScale)*100
-			const newNetFlowPos = (item.newNetFlow / totalScale) * 100;
-			const indicator = bufferEl.querySelector('.net-flow-indicator');
-			indicator.style.left = `${newNetFlowPos}%`;
+    function formatRemaining(val) {
+      const uom = document.querySelector('input[name="uom"]:checked').value;
+      if (uom === 'Units')   return `${Math.round(val)} units`;
+      return `$${val.toFixed(2)}`; // treat anything else as Value
+    }
 
-			// 6. Add “after” label if needed
-			if (!bufferEl.querySelector('.net-flow-label.after')) {
-			  const afterLabel = document.createElement('div');
-			  afterLabel.className = 'net-flow-label after';
-			  afterLabel.style.left = '50%';
-			  afterLabel.textContent = `NF: ${Math.round(item.newNetFlow)}`;
-			  indicator.appendChild(afterLabel);
-			}
+    // -------------- UoM & AVAILABLE INPUT HANDLERS (updated) --------------
+    document.querySelectorAll('input[name="uom"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const u = document.querySelector('input[name="uom"]:checked').value;
+        document.getElementById('available-label').textContent = `Quantity to Share (in ${u}):`;
+        remainingPool = parseFloat(availableInput.value) || 0;
+        resetAllSteps();
+      });
+    });
+    function onAvailableChange() {
+      remainingPool = parseFloat(availableInput.value) || 0;
+      resetAllSteps();
+    }
 
-			// 7. Update priority text/color
-			const newNetFlowPercent = item.toy > 0
-			  ? ((item.newNetFlow / item.toy) * 100).toFixed(1)
-			  : '100.0';
-			const prioritySpan = bufferEl.querySelector('.buffer-header span');
-			prioritySpan.textContent = `${item.newPriority} (${newNetFlowPercent}%)`;
-			prioritySpan.style.color = getPriorityColor(item.newPriority);
+    // -------------- RESET ALL --------------
+    function resetAllSteps() {
+      initializeData();
+      renderBuffers();
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('step1-btn').disabled = false;
+      document.getElementById('step2-btn').disabled = true;
+      updateSummaryPanel();
+    }
 
-			// 8. Show allocation details (your existing logic)
-			const allocationDiv = document.getElementById(`allocation-${item.id}`);
-			allocationDiv.classList.add('show');
-			if (currentScenario === 'truckload') {
-			  allocationDiv.innerHTML = `
-				<strong>Allocated:</strong> ${item.allocation} units (${item.allocatedPallets || 0} pallets)<br>
-				<strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
-				<strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">
-				  ${item.newPriority}
-				</span>
-			  `;
-			} else if (currentScenario === 'min-spend') {
-			  allocationDiv.innerHTML = `
-				<strong>Allocated:</strong> ${item.allocation} units (${(item.allocatedSpend || 0).toFixed(2)})<br>
-				<strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
-				<strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">
-				  ${item.newPriority}
-				</span>
-			  `;
-			} else {
-			  allocationDiv.innerHTML = `
-				<strong>Allocated:</strong> ${item.allocation} units<br>
-				<strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
-				<strong>Planning Priority:</strong> ${item.planningPriority}%<br>
-				<strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">
-				  ${item.newPriority}
-				</span>
-			  `;
-			}
-		  });
+    // -------------- INITIALIZE ON LOAD --------------
+    initializeData();
+    renderBuffers();
 
-		  showResults();
-		}
-
-
-        
-        function showResults() {
-            const resultsDiv = document.getElementById('results');
-            const resultsContent = document.getElementById('results-content');
-            resultsDiv.style.display = 'block';
-            
-            if (currentScenario === 'coverage-too-little' || currentScenario === 'coverage-too-much') {
-                const totalAllocated = items.reduce((sum, item) => sum + item.allocation, 0);
-                const avgPriority = (items.reduce((sum, item) => sum + parseFloat(item.planningPriority), 0) / items.length).toFixed(1);
-                
-                resultsContent.innerHTML = `
-                    <p><strong>Total Allocated:</strong> ${totalAllocated} units</p>
-                    <p><strong>Average Planning Priority:</strong> ${avgPriority}%</p>
-                    <p><strong>Result:</strong> All locations balanced to similar priority levels</p>
-                `;
-            } else if (currentScenario === 'truckload') {
-                const totalPallets = items.reduce((sum, item) => sum + (item.allocatedPallets || 0), 0);
-                const constraint = parseInt(document.getElementById('constraint-value').value);
-                
-                resultsContent.innerHTML = `
-                    <p><strong>Pallets Used:</strong> ${totalPallets} / ${constraint}</p>
-                    <p><strong>Utilization:</strong> ${((totalPallets / constraint) * 100).toFixed(1)}%</p>
-                    <p><strong>Items Ordered:</strong> ${items.filter(item => item.allocation > 0).length}</p>
-                `;
-            } else if (currentScenario === 'min-spend') {
-                const totalSpend = items.reduce((sum, item) => sum + (item.allocatedSpend || 0), 0);
-                const minSpend = parseInt(document.getElementById('constraint-value').value);
-                
-                resultsContent.innerHTML = `
-                    <p><strong>Total Spend:</strong> $${totalSpend.toFixed(2)}</p>
-                    <p><strong>Target:</strong> $${minSpend}</p>
-                    <p><strong>Items Ordered:</strong> ${items.filter(item => item.allocation > 0).length}</p>
-                `;
-            }
-        }
-        
-        function resetSimulation() {
-            initializeData();
-            renderBuffers();
-            document.getElementById('results').style.display = 'none';
-            if (currentScenario === 'truckload') {
-                document.getElementById('truck-visual').innerHTML = '';
-            }
-            
-            // Remove any existing "after" labels and blue zones
-            document.querySelectorAll('.net-flow-label.after').forEach(label => label.remove());
-            document.querySelectorAll('.blue-zone').forEach(zone => zone.remove());
-        }
-        
-        function updateAvailable() {
-            resetSimulation();
-        }
-        
-        // Initialize on load
-        initializeData();
-        renderBuffers();
-        setPrefillQuantity();
-    </script>
+    // -------------- BUTTON LISTENERS --------------
+    document.getElementById('step1-btn').addEventListener('click', doStep1);
+    document.getElementById('step2-btn').addEventListener('click', doStep2);
+  </script>
 </body>
 </html>
