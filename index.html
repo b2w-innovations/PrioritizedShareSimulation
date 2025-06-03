@@ -132,18 +132,22 @@
         .red-zone {
             background: #ff4444;
             left: 0;
+            z-index: 1;
         }
         
         .yellow-zone {
             background: #ffcc00;
+            z-index: 1;
         }
         
         .green-zone {
             background: #44ff44;
+            z-index: 1;
         }
         
         .blue-zone {
             background: #00ccff;
+            z-index: 1;
         }
         
         .net-flow-indicator {
@@ -462,7 +466,7 @@
                 constraintControl.style.display = 'none';
                 truckVisual.style.display = 'none';
             } else if (scenario === 'coverage-too-much') {
-                document.getElementById('available-qty').value = 10000;
+                document.getElementById('available-qty').value = 20000;
                 constraintControl.style.display = 'none';
                 truckVisual.style.display = 'none';
             } else if (scenario === 'truckload') {
@@ -495,9 +499,9 @@
                 const totalToTog = items.reduce((sum, item) => sum + (item.tog - item.netFlow), 0);
                 suggestedQty = Math.round(totalToTog * 0.7);
             } else if (currentScenario === 'coverage-too-much') {
-                // Calculate total to TOG plus 30% to create excess
+                // Calculate total to TOG plus 50% to create significant excess
                 const totalToTog = items.reduce((sum, item) => sum + (item.tog - item.netFlow), 0);
-                suggestedQty = Math.round(totalToTog * 1.3);
+                suggestedQty = Math.round(totalToTog * 1.5);
             } else if (currentScenario === 'truckload') {
                 // Set to a high number to simulate unlimited availability
                 suggestedQty = 50000;
@@ -704,7 +708,7 @@
             
             // Step 2: Distribute excess equally
             if (remaining > 0) {
-                const avgExcess = Math.round(remaining / items.length);
+                const avgExcess = Math.floor(remaining / items.length);
                 items.forEach(item => {
                     item.allocation += avgExcess;
                     item.newNetFlow += avgExcess;
@@ -718,6 +722,17 @@
                     item.planningPriority = ((item.newNetFlow / item.toy) * 100).toFixed(1);
                 } else {
                     item.planningPriority = '100.0';
+                }
+                
+                // Ensure priority is set correctly
+                if (item.newNetFlow > item.tog) {
+                    item.newPriority = 'OTOG';
+                } else if (item.newNetFlow > item.toy) {
+                    item.newPriority = 'GREEN';
+                } else if (item.newNetFlow > item.tor) {
+                    item.newPriority = 'YELLOW';
+                } else {
+                    item.newPriority = 'RED';
                 }
             });
         }
@@ -970,8 +985,9 @@
                 document.getElementById('truck-visual').innerHTML = '';
             }
             
-            // Remove any existing "after" labels
+            // Remove any existing "after" labels and blue zones
             document.querySelectorAll('.net-flow-label.after').forEach(label => label.remove());
+            document.querySelectorAll('.blue-zone').forEach(zone => zone.remove());
         }
         
         function updateAvailable() {
