@@ -523,75 +523,74 @@
             });
         }
         
-		function createBufferElement(item) {
-			const div = document.createElement('div');
-			div.className = 'buffer-item';
-			div.dataset.id = item.id;
-			
-			const redWidth    = (item.tor  / item.tog) * 100;
-			const yellowWidth = ((item.toy - item.tor) / item.tog) * 100;
-			const greenWidth  = ((item.tog - item.toy) / item.tog) * 100;
-			const netFlowPos  = (item.netFlow / item.tog) * 100;
-			
-			const netFlowPercent = item.toy > 0
-				? ((item.netFlow / item.toy) * 100).toFixed(1)
-				: '100.0';
-			
-			const orderToTog = item.tog - item.netFlow;
-			const blueLeft  = redWidth + yellowWidth + greenWidth;
-			const blueWidth = 0;
-			
-			div.innerHTML = `
-				<div class="buffer-header">
-					<h4>${item.name}</h4>
-					<span style="color: ${getPriorityColor(item.priority)}; font-weight: bold;">
-						${item.priority} (${netFlowPercent}%)
-					</span>
-				</div>
-				<div class="buffer-visual">
-					<div class="buffer-zone red-zone"   style="width: ${redWidth}%;"></div>
-					<div class="buffer-zone yellow-zone" style="left: ${redWidth}%; width: ${yellowWidth}%;"></div>
-					<div class="buffer-zone green-zone"  style="left: ${redWidth + yellowWidth}%; width: ${greenWidth}%;"></div>
-					<div class="buffer-zone blue-zone"   style="left: ${blueLeft}%; width: ${blueWidth}%;"></div>
-					<!-- note the added closing quote after ${netFlowPos}%: -->
-					<div class="net-flow-indicator" style="left: ${netFlowPos}%;"></div>
-				</div>
-				<div class="buffer-stats">
-					<span>Net Flow: ${item.netFlow}</span>
-					<span>TOG: ${item.tog}</span>
-					<span>TOY: ${item.toy}</span>
-					<span>TOR: ${item.tor}</span>
-				</div>
-				<div class="stats-panel">
-					<h5>Buffer Statistics</h5>
-					<div class="stat-row">
-						<span class="stat-label">Order to TOG:</span>
-						<span class="stat-value">${orderToTog} units</span>
-					</div>
-					<div class="stat-row">
-						<span class="stat-label">Buffer Status:</span>
-						<span class="stat-value" style="color: ${getPriorityColor(item.priority)};">${item.priority}</span>
-					</div>
-					<div class="stat-row">
-						<span class="stat-label">Coverage %:</span>
-						<span class="stat-value">${netFlowPercent}%</span>
-					</div>
-					${currentScenario === 'truckload' ? `
-					<div class="stat-row">
-						<span class="stat-label">Pallets Needed:</span>
-						<span class="stat-value">${Math.ceil(orderToTog / (item.unitSize || 50))}</span>
-					</div>` : ''}
-					${currentScenario === 'min-spend' ? `
-					<div class="stat-row">
-						<span class="stat-label">Cost to TOG:</span>
-						<span class="stat-value">${(orderToTog * (item.unitPrice || 1)).toFixed(2)}</span>
-					</div>` : ''}
-				</div>
-				<div class="allocation-display" id="allocation-${item.id}"></div>
-			`;
-			return div;
-		}
-
+        function createBufferElement(item) {
+            const div = document.createElement('div');
+            div.className = 'buffer-item';
+            div.dataset.id = item.id;
+            
+            const redWidth = (item.tor / item.tog) * 100;
+            const yellowWidth = ((item.toy - item.tor) / item.tog) * 100;
+            const greenWidth = ((item.tog - item.toy) / item.tog) * 100;
+            const netFlowPos = (item.netFlow / item.tog) * 100;
+            
+            const netFlowPercent = item.toy > 0 ? ((item.netFlow / item.toy) * 100).toFixed(1) : '100.0';
+            
+            // Calculate order quantity to TOG
+            const orderToTog = item.tog - item.netFlow;
+            
+            div.innerHTML = `
+                <div class="buffer-header">
+                    <h4>${item.name}</h4>
+                    <span style="color: ${getPriorityColor(item.priority)}; font-weight: bold;">
+                        ${item.priority} (${netFlowPercent}%)
+                    </span>
+                </div>
+                <div class="buffer-visual">
+                    <div class="buffer-zone red-zone" style="width: ${redWidth}%;"></div>
+                    <div class="buffer-zone yellow-zone" style="left: ${redWidth}%; width: ${yellowWidth}%;"></div>
+                    <div class="buffer-zone green-zone" style="left: ${redWidth + yellowWidth}%; width: ${greenWidth}%;"></div>
+                    <div class="net-flow-indicator" style="left: ${netFlowPos}%;">
+                        <div class="net-flow-label before" style="left: 50%;">NF: ${item.netFlow}</div>
+                    </div>
+                </div>
+                <div class="buffer-stats">
+                    <span>Net Flow: ${item.netFlow}</span>
+                    <span>TOG: ${item.tog}</span>
+                    <span>TOY: ${item.toy}</span>
+                    <span>TOR: ${item.tor}</span>
+                </div>
+                <div class="stats-panel">
+                    <h5>Buffer Statistics</h5>
+                    <div class="stat-row">
+                        <span class="stat-label">Order to TOG:</span>
+                        <span class="stat-value">${orderToTog} units</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Buffer Status:</span>
+                        <span class="stat-value" style="color: ${getPriorityColor(item.priority)};">${item.priority}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Coverage %:</span>
+                        <span class="stat-value">${netFlowPercent}%</span>
+                    </div>
+                    ${currentScenario === 'truckload' ? `
+                    <div class="stat-row">
+                        <span class="stat-label">Pallets Needed:</span>
+                        <span class="stat-value">${Math.ceil(orderToTog / (item.unitSize || 50))}</span>
+                    </div>
+                    ` : ''}
+                    ${currentScenario === 'min-spend' ? `
+                    <div class="stat-row">
+                        <span class="stat-label">Cost to TOG:</span>
+                        <span class="stat-value">${(orderToTog * (item.unitPrice || 1)).toFixed(2)}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="allocation-display" id="allocation-${item.id}"></div>
+            `;
+            
+            return div;
+        }
         
         function getPriorityColor(priority) {
             switch(priority) {
@@ -856,97 +855,92 @@
             });
         }
         
-		function updateDisplay() {
-		  items.forEach(item => {
-			const bufferEl = document.querySelector(`.buffer-item[data-id="${item.id}"]`);
-			bufferEl.classList.add('highlight');
-
-			// 1. If newNetFlow > tog, bump totalScale up to 110% of newNetFlow.
-			//    Otherwise totalScale = tog (so blue is zero).
-			const desiredMax = Math.max(item.tog, item.newNetFlow * 1.1);
-			const totalScale = desiredMax;
-
-			// 2. Compute each zone’s percentage of that totalScale
-			const redW    = (item.tor  / totalScale) * 100;
-			const yellowW = ((item.toy - item.tor) / totalScale) * 100;
-			const greenW  = ((item.tog - item.toy) / totalScale) * 100;
-			// overflow = how much sits above TOG (could be 0 if newNetFlow<=tog)
-			const overflow= Math.max(0, item.newNetFlow - item.tog);
-			const blueW   = (overflow / totalScale) * 100;
-
-			// 3. Grab each zone element
-			const redZone    = bufferEl.querySelector('.red-zone');
-			const yellowZone = bufferEl.querySelector('.yellow-zone');
-			const greenZone  = bufferEl.querySelector('.green-zone');
-			const blueZone   = bufferEl.querySelector('.blue-zone');
-
-			// 4. Apply new widths/positions
-			redZone.style.width    = `${redW}%`;
-			yellowZone.style.left  = `${redW}%`;
-			yellowZone.style.width = `${yellowW}%`;
-			greenZone.style.left   = `${redW + yellowW}%`;
-			greenZone.style.width  = `${greenW}%`;
-			// blue starts right after green
-			blueZone.style.left    = `${redW + yellowW + greenW}%`;
-			blueZone.style.width   = `${blueW}%`;
-
-			// 5. Place the arrow at (newNetFlow/totalScale)*100
-			const newNetFlowPos = (item.newNetFlow / totalScale) * 100;
-			const indicator = bufferEl.querySelector('.net-flow-indicator');
-			indicator.style.left = `${newNetFlowPos}%`;
-
-			// 6. Add “after” label if needed
-			if (!bufferEl.querySelector('.net-flow-label.after')) {
-			  const afterLabel = document.createElement('div');
-			  afterLabel.className = 'net-flow-label after';
-			  afterLabel.style.left = '50%';
-			  afterLabel.textContent = `NF: ${Math.round(item.newNetFlow)}`;
-			  indicator.appendChild(afterLabel);
-			}
-
-			// 7. Update priority text/color
-			const newNetFlowPercent = item.toy > 0
-			  ? ((item.newNetFlow / item.toy) * 100).toFixed(1)
-			  : '100.0';
-			const prioritySpan = bufferEl.querySelector('.buffer-header span');
-			prioritySpan.textContent = `${item.newPriority} (${newNetFlowPercent}%)`;
-			prioritySpan.style.color = getPriorityColor(item.newPriority);
-
-			// 8. Show allocation details (your existing logic)
-			const allocationDiv = document.getElementById(`allocation-${item.id}`);
-			allocationDiv.classList.add('show');
-			if (currentScenario === 'truckload') {
-			  allocationDiv.innerHTML = `
-				<strong>Allocated:</strong> ${item.allocation} units (${item.allocatedPallets || 0} pallets)<br>
-				<strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
-				<strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">
-				  ${item.newPriority}
-				</span>
-			  `;
-			} else if (currentScenario === 'min-spend') {
-			  allocationDiv.innerHTML = `
-				<strong>Allocated:</strong> ${item.allocation} units (${(item.allocatedSpend || 0).toFixed(2)})<br>
-				<strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
-				<strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">
-				  ${item.newPriority}
-				</span>
-			  `;
-			} else {
-			  allocationDiv.innerHTML = `
-				<strong>Allocated:</strong> ${item.allocation} units<br>
-				<strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
-				<strong>Planning Priority:</strong> ${item.planningPriority}%<br>
-				<strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">
-				  ${item.newPriority}
-				</span>
-			  `;
-			}
-		  });
-
-		  showResults();
-		}
-
-
+        function updateDisplay() {
+            items.forEach(item => {
+                const bufferEl = document.querySelector(`.buffer-item[data-id="${item.id}"]`);
+                bufferEl.classList.add('highlight');
+                
+                // Update net flow indicator position
+                const newNetFlowPos = (item.newNetFlow / item.tog) * 100;
+                const indicator = bufferEl.querySelector('.net-flow-indicator');
+                indicator.style.left = newNetFlowPos + '%';
+                
+                // Add the "after" net flow label
+                const afterLabel = document.createElement('div');
+                afterLabel.className = 'net-flow-label after';
+                afterLabel.style.left = '50%';
+                afterLabel.textContent = `NF: ${Math.round(item.newNetFlow)}`;
+                indicator.appendChild(afterLabel);
+                
+                // Update priority display
+                const newNetFlowPercent = item.toy > 0 ? ((item.newNetFlow / item.toy) * 100).toFixed(1) : '100.0';
+                const prioritySpan = bufferEl.querySelector('.buffer-header span');
+                prioritySpan.textContent = `${item.newPriority} (${newNetFlowPercent}%)`;
+                prioritySpan.style.color = getPriorityColor(item.newPriority);
+                
+                // Show allocation
+                const allocationDiv = document.getElementById(`allocation-${item.id}`);
+                allocationDiv.classList.add('show');
+                
+                if (currentScenario === 'truckload') {
+                    allocationDiv.innerHTML = `
+                        <strong>Allocated:</strong> ${item.allocation} units (${item.allocatedPallets || 0} pallets)<br>
+                        <strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
+                        <strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">${item.newPriority}</span>
+                    `;
+                } else if (currentScenario === 'min-spend') {
+                    allocationDiv.innerHTML = `
+                        <strong>Allocated:</strong> ${item.allocation} units (${(item.allocatedSpend || 0).toFixed(2)})<br>
+                        <strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
+                        <strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">${item.newPriority}</span>
+                    `;
+                } else {
+                    allocationDiv.innerHTML = `
+                        <strong>Allocated:</strong> ${item.allocation} units<br>
+                        <strong>New Net Flow:</strong> ${Math.round(item.newNetFlow)}<br>
+                        <strong>Planning Priority:</strong> ${item.planningPriority}%<br>
+                        <strong>New Status:</strong> <span style="color: ${getPriorityColor(item.newPriority)}">${item.newPriority}</span>
+                    `;
+                }
+                
+                // Update stats panel
+                const statsPanel = bufferEl.querySelector('.stats-panel');
+                if (statsPanel) {
+                    const newOrderToTog = Math.max(0, item.tog - item.newNetFlow);
+                    const orderToTogStat = statsPanel.querySelector('[data-stat="order-to-tog"]');
+                    if (orderToTogStat) {
+                        orderToTogStat.textContent = `${newOrderToTog} units`;
+                    }
+                    
+                    const bufferStatusStat = statsPanel.querySelector('[data-stat="buffer-status"]');
+                    if (bufferStatusStat) {
+                        bufferStatusStat.textContent = item.newPriority;
+                        bufferStatusStat.style.color = getPriorityColor(item.newPriority);
+                    }
+                    
+                    const coveragePercentStat = statsPanel.querySelector('[data-stat="coverage-percent"]');
+                    if (coveragePercentStat) {
+                        coveragePercentStat.textContent = `${newNetFlowPercent}%`;
+                    }
+                    
+                    // Update scenario-specific stats
+                    if (currentScenario === 'truckload') {
+                        const palletsNeededStat = statsPanel.querySelector('[data-stat="pallets-needed"]');
+                        if (palletsNeededStat) {
+                            palletsNeededStat.textContent = Math.ceil(newOrderToTog / (item.unitSize || 50));
+                        }
+                    } else if (currentScenario === 'min-spend') {
+                        const costToTogStat = statsPanel.querySelector('[data-stat="cost-to-tog"]');
+                        if (costToTogStat) {
+                            costToTogStat.textContent = `${(newOrderToTog * (item.unitPrice || 1)).toFixed(2)}`;
+                        }
+                    }
+                }
+            });
+            
+            // Show results summary
+            showResults();
+        }
         
         function showResults() {
             const resultsDiv = document.getElementById('results');
