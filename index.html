@@ -26,55 +26,39 @@
       color: #333;
       margin-bottom: 10px;
     }
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 20px;
-    }
-    /* 1) The “Overall Summary” banner itself */
     .summary-banner {
       display: flex;
-      align-items: center;            /* vertical center of title + values */
-      background: #f5f5f5;            /* light gray background for the banner */
-      border: 1px solid #ddd;         /* subtle border */
-      border-radius: 8px;             /* rounded corners */
-      padding: 10px 20px;             /* some padding top/bottom & left/right */
-      margin: 10px 0 20px;            /* space above/below the banner */
-      gap: 40px;                      /* space between each child element */
+      align-items: center;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 20px;
+      margin: 10px 0 20px;
+      gap: 40px;
     }
-
-    /* 2) Left‐aligned “Overall Summary” title */
     .summary-title {
-      flex-shrink: 0;                  /* don’t squash the title below its content size */
+      flex-shrink: 0;
       font-size: 16px;
       font-weight: bold;
       color: #333;
     }
-
-    /* 3) Individual stat items (label + value) */
     .summary-banner .stat-item {
       display: flex;
-      flex-direction: column;         /* label on top, value below if that’s preferred */
-      align-items: center;            /* center each pair horizontally */
-      min-width: 120px;               /* ensures each column stays reasonably wide */
+      flex-direction: column;
+      align-items: center;
+      min-width: 120px;
+      flex: 1;
+      text-align: center;
     }
-
-    /* 4) The label (lighter) and the numeric value (bold) */
     .summary-banner .stat-item .stat-label {
       font-size: 12px;
-      color: #666;                    /* slightly muted label */
+      color: #666;
       margin-bottom: 4px;
     }
     .summary-banner .stat-item .stat-value {
       font-size: 18px;
       font-weight: bold;
       color: #000;
-    }
-
-    /* 5) (Optional) If you want all stat‐items to flex evenly, force them to expand */
-    .summary-banner .stat-item {
-      flex: 1;                        /* each stat‐item takes equal share of available width */
-      text-align: center;             /* center text inside each column */
     }
     .step-buttons {
       text-align: center;
@@ -156,13 +140,12 @@
     }
     .edit-params-inline {
       display: flex;
-      gap: 12px;           /* or whatever gutter you prefer */
-      margin-bottom: 10px; /* keep your bottom margin */
+      gap: 12px;
+      margin-bottom: 10px;
     }
-
     .edit-params-inline .param-inline {
-      flex: 1;             /* each box now takes equal width (1/3 of parent) */
-      min-width: 0;        /* prevents overflow if labels are long */
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
     }
@@ -199,7 +182,7 @@
       width: 4px;
       height: 100%;
       background: #000;
-      transition: all 0.5s ease;
+      transition: left 0.8s ease-in-out;
       z-index: 10;
     }
     .net-flow-indicator::before {
@@ -212,33 +195,14 @@
     }
     .orig-net-flow-indicator {
       position: absolute;
-      width: 2px;
+      width: 4px;
       height: 100%;
-      background: #888;
-      transition: all 0.5s ease;
-      z-index: 9;
+      background: #888; 
+      z-index: 5;
     }
     .orig-net-flow-indicator::before {
-      content: '◄';
-      position: absolute;
-      top: -18px;
-      left: -6px;
-      font-size: 14px;
-      color: #888;
+      content: '';
     }
-    .net-flow-label {
-      position: absolute;
-      top: -45px;
-      transform: translateX(-50%);
-      background: white;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 12px;
-      font-weight: bold;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      white-space: nowrap;
-    }
-    .net-flow-label.after { background: #00ccff; top: 45px; }
     .param-facts {
       background: #fafafa;
       border-top: 1px solid #e0e0e0;
@@ -264,7 +228,6 @@
   <div class="container">
     <h1>DDMRP Priority Share Simulation</h1>
 
-    <!-- Step buttons (only two steps now) -->
     <div class="step-buttons">
       <button id="step1-btn" class="step-btn">Step 1: Fill to Top of YELLOW</button>
       <button id="step2-btn" class="step-btn" disabled>Step 2: Fill through GREEN</button>
@@ -323,24 +286,20 @@
   </div>
 
   <script>
-    // GLOBALS
     let items = [];
     let remainingPool = 0;
     const availableInput = document.getElementById('available-qty');
-
-    // Store the original “defaults” so we can fully reset if needed
     let defaultItems = [];
 
-    // -------------- INITIALIZE ON LOAD --------------
     function loadDefaults() {
       defaultItems = [
         {
           id: 1,
           name: 'WarehousePart 1',
           netFlow: 7612,
-          tog: 11250,
-          toy: 8750,
           tor: 3075,
+          toy: 8750,
+          tog: 11250,
           priority: 'YELLOW',
           moq: 1,
           unitSize: 1,
@@ -350,9 +309,9 @@
           id: 2,
           name: 'WarehousePart 2',
           netFlow: 6304,
-          tog: 8640,
-          toy: 6720,
           tor: 2620,
+          toy: 6720,
+          tog: 8640,
           priority: 'YELLOW',
           moq: 1,
           unitSize: 1,
@@ -362,9 +321,9 @@
           id: 3,
           name: 'WarehousePart 3',
           netFlow: 5506,
-          tog: 6885,
-          toy: 5355,
           tor: 2085,
+          toy: 5355,
+          tog: 6885,
           priority: 'GREEN',
           moq: 1,
           unitSize: 1,
@@ -374,30 +333,35 @@
           id: 4,
           name: 'WarehousePart 4',
           netFlow: 2705,
-          tog: 9225,
-          toy: 7175,
           tor: 3075,
+          toy: 7175,
+          tog: 9225,
           priority: 'RED',
           moq: 1,
           unitSize: 1,
           unitPrice: 4.0
         }
       ];
-      // Deep‐copy defaults into items
-      items = defaultItems.map(item => ({ ...item }));
-      resetLogic();       // set newNetFlow, newPriority, allocation based on initial netFlow
+      items = defaultItems.map(item => ({
+        ...item,
+        origNetFlow: item.netFlow,      // preserve original netFlow
+        newNetFlow: item.netFlow,
+        newPriority: item.priority,
+        allocation: 0,
+        planningPriority: item.tog > 0
+          ? ((item.netFlow / item.tog) * 100).toFixed(1)
+          : '100.0'
+      }));
+      resetLogic();
       renderBuffers();
     }
 
-    // -------------- RESET LOGIC TO “BEFORE ANY STEPS” (but keep any user edits to netFlow, MOQ, unitSize) --------------
     function resetLogic() {
       remainingPool = parseFloat(availableInput.value) || 0;
       items.forEach(item => {
-        // Preserve any user‐edited netFlow/moq/unitSize; simply reset allocation & status
         item.newNetFlow = item.netFlow;
         item.newPriority = item.priority;
         item.allocation = 0;
-        // planningPriority now should reflect % of TOG (for display)
         item.planningPriority = item.tog > 0
           ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
           : '100.0';
@@ -409,16 +373,22 @@
       renderBuffers();
     }
 
-    // -------------- FULL RESET (“Reset Everything”) --------------
     function resetEverything() {
-      // Restore from defaultItems
-      items = defaultItems.map(item => ({ ...item }));
+      items = defaultItems.map(item => ({
+        ...item,
+        origNetFlow: item.netFlow,
+        newNetFlow: item.netFlow,
+        newPriority: item.priority,
+        allocation: 0,
+        planningPriority: item.tog > 0
+          ? ((item.netFlow / item.tog) * 100).toFixed(1)
+          : '100.0'
+      }));
       availableInput.value = 10000;
       document.querySelector('input[name="uom"][value="Units"]').checked = true;
       resetLogic();
     }
 
-    // -------------- RENDER BUFFERS --------------
     function renderBuffers() {
       const container = document.getElementById('buffers-container');
       container.innerHTML = '';
@@ -427,7 +397,6 @@
         const div = document.createElement('div');
         div.className = 'buffer-item';
 
-        // Editable parameters inline
         const editHTML = `
           <div class="edit-params-inline">
             <div class="param-inline">
@@ -445,7 +414,6 @@
           </div>
         `;
 
-        // Buffer header with name and updated % of TOG
         const headerHTML = `
           <div class="buffer-header">
             <h4>${item.name}</h4>
@@ -455,7 +423,6 @@
           </div>
         `;
 
-        // Visual bar
         const totalScale = Math.max(item.tog, item.newNetFlow * 1.1);
         const redW    = (item.tor / totalScale) * 100;
         const yellowW = ((item.toy - item.tor) / totalScale) * 100;
@@ -477,7 +444,6 @@
           </div>
         `;
 
-        // Bottom parameter facts
         const factsHTML = `
           <div class="param-facts">
             <div class="fact-row">Current NF: <span>${item.newNetFlow} units</span></div>
@@ -491,13 +457,10 @@
         div.innerHTML = editHTML + headerHTML + visualHTML + factsHTML;
         container.appendChild(div);
 
-        // Attach event listeners for inline inputs
         document.getElementById(`nf-${idx}`).addEventListener('change', e => {
           const newVal = parseInt(e.target.value, 10) || 0;
           item.netFlow = newVal;
-          // Update origNetFlow so indicator adjusts
           item.origNetFlow = newVal;
-          // Reset logic (but keep this edited value)
           resetLogic();
         });
         document.getElementById(`moq-${idx}`).addEventListener('change', e => {
@@ -523,14 +486,12 @@
       }
     }
 
-    // -------------- ALLOCATION HELPER --------------
     function computeAllocation(neededUnits, item) {
       const palletsForNeed = Math.ceil(neededUnits / item.unitSize);
       const palletsForMOQ  = Math.ceil(item.moq / item.unitSize);
       const pallets = Math.max(palletsForNeed, palletsForMOQ);
 
       const allocUnits   = pallets * item.unitSize;
-      const allocPallets = pallets;
       const allocValue   = allocUnits * item.unitPrice;
 
       const uom = document.querySelector('input[name="uom"]:checked').value;
@@ -538,52 +499,91 @@
       if (uom === 'Units') {
         poolAlloc = allocUnits;
       } else {
-        // Treat Value if not Units
         poolAlloc = allocValue;
       }
-      return { poolAlloc, allocUnits, allocPallets, allocValue };
+      return { poolAlloc, allocUnits, allocValue };
     }
 
-    // -------------- STEP 1: BALANCED FILL TO TOP‐OF‐YELLOW --------------
+    // Distribute remainingPool equally to achieve even % of TOY across all items
+    function equalDistributeToYellow() {
+      const n = items.length;
+      let sumNew = 0, sumToy = 0;
+      items.forEach(item => {
+        sumNew += item.newNetFlow;
+        sumToy += item.toy;
+      });
+      if (sumToy === 0) return;
+      const p = (sumNew + remainingPool) / sumToy; // target % across all
+      items.forEach(item => {
+        const targetFlow = Math.min(item.toy, Math.round(p * item.toy));
+        const delta = targetFlow - item.newNetFlow;
+        if (delta > 0) {
+          item.allocation += delta;
+          item.newNetFlow = targetFlow;
+          if (item.newNetFlow >= item.toy) {
+            item.newPriority = 'GREEN';
+          } else if (item.newNetFlow >= item.tor && item.newPriority === 'RED') {
+            item.newPriority = 'YELLOW';
+          }
+        }
+        item.planningPriority = item.tog > 0
+          ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
+          : '100.0';
+      });
+      remainingPool = 0;
+      renderBuffers();
+      updateAfterStep1UI();
+      document.getElementById('step1-btn').disabled = true;
+      document.getElementById('step2-btn').disabled = false;
+    }
+
     function doStep1() {
-      // 1) Recompute each item’s “coverage % of TOG” for display
+      // Recompute percentages
       items.forEach(item => {
         item.planningPriority = item.tog > 0
           ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
           : '100.0';
       });
 
-      // 2) While we still have pool left and at least one item below TOY:
-      let uom = document.querySelector('input[name="uom"]:checked').value;
+      // Find lowest‐coverage eligible item
+      const eligible = items.filter(it => it.newNetFlow < it.toy);
+      if (!eligible.length) {
+        updateAfterStep1UI();
+        document.getElementById('step1-btn').disabled = true;
+        document.getElementById('step2-btn').disabled = false;
+        return;
+      }
+      eligible.sort((a, b) => (a.newNetFlow / a.toy) - (b.newNetFlow / b.toy));
+      const lowest = eligible[0];
+      const neededUnits = lowest.toy - lowest.newNetFlow;
+      const { allocUnits, allocValue } = computeAllocation(neededUnits, lowest);
+      const uom = document.querySelector('input[name="uom"]:checked').value;
+      const costToTOY = (uom === 'Units') ? allocUnits : allocValue;
+
+      // If we can't afford to bring the lowest to TOY, split equally
+      if (remainingPool < costToTOY) {
+        equalDistributeToYellow();
+        return;
+      }
+
+      // Otherwise, proceed with the existing loop
       while (true) {
-        const eligible = items.filter(it => it.newNetFlow < it.toy);
-        if (!eligible.length) break;                // nothing more to fill
-        eligible.sort((a, b) => (a.newNetFlow / a.toy) - (b.newNetFlow / b.toy));
-        const targetItem = eligible[0];             // lowest‐coverage item
-
-        const neededUnits = targetItem.toy - targetItem.newNetFlow;
-        const { allocUnits, allocPallets, allocValue } =
-          computeAllocation(neededUnits, targetItem);
-
-        let stepCost;
-        if (uom === 'Units') {
-          stepCost = targetItem.unitSize;
-        } else {
-          stepCost = targetItem.unitSize * targetItem.unitPrice;
-        }
-
-        if (remainingPool < stepCost) break;        // can’t afford one more pallet
-
+        const eligibleLoop = items.filter(it => it.newNetFlow < it.toy);
+        if (!eligibleLoop.length) break;
+        eligibleLoop.sort((a, b) => (a.newNetFlow / a.toy) - (b.newNetFlow / b.toy));
+        const targetItem = eligibleLoop[0];
+        const needed = targetItem.toy - targetItem.newNetFlow;
+        const { allocUnits: au, allocValue: av } = computeAllocation(needed, targetItem);
+        const stepCost = (uom === 'Units') ? targetItem.unitSize : (targetItem.unitSize * targetItem.unitPrice);
+        if (remainingPool < stepCost) break;
         targetItem.allocation += targetItem.unitSize;
         targetItem.newNetFlow += targetItem.unitSize;
         remainingPool -= stepCost;
-
         if (targetItem.newNetFlow >= targetItem.toy) {
           targetItem.newPriority = 'GREEN';
         } else if (targetItem.newNetFlow >= targetItem.tor && targetItem.newPriority === 'RED') {
           targetItem.newPriority = 'YELLOW';
         }
-
         targetItem.planningPriority = targetItem.tog > 0
           ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
           : '100.0';
@@ -601,12 +601,43 @@
       const resultsContent = document.getElementById('results-content');
       resultsDiv.style.display = 'block';
       resultsContent.innerHTML = `
-        <p><strong>Step 1 complete:</strong> Balanced fill to Top of YELLOW (or as far as possible).<br/>
+        <p><strong>Step 1 complete:</strong> Balanced fill to Top of YELLOW (or equal share if insufficient).<br/>
         Used: <strong>${used}</strong>. Remaining: <strong>${formatRemaining(remainingPool)}</strong>.</p>
       `;
     }
 
-    // -------------- STEP 2: BALANCED FILL THROUGH GREEN --------------
+    // Distribute remainingPool equally to achieve even % of TOG across all items
+    function equalDistributeToGreen() {
+      const n = items.length;
+      let sumNew = 0, sumTog = 0;
+      items.forEach(item => {
+        sumNew += item.newNetFlow;
+        sumTog += item.tog;
+      });
+      if (sumTog === 0) return;
+      const p = (sumNew + remainingPool) / sumTog; // target % across all
+      items.forEach(item => {
+        const targetFlow = Math.min(item.tog, Math.round(p * item.tog));
+        const delta = targetFlow - item.newNetFlow;
+        if (delta > 0) {
+          item.allocation += delta;
+          item.newNetFlow = targetFlow;
+          if (item.newNetFlow >= item.tog) {
+            item.newPriority = 'OTOG';
+          } else if (item.newNetFlow >= item.toy && item.newPriority === 'YELLOW') {
+            item.newPriority = 'GREEN';
+          }
+        }
+        item.planningPriority = item.tog > 0
+          ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
+          : '100.0';
+      });
+      remainingPool = 0;
+      renderBuffers();
+      updateAfterStep2UI();
+      document.getElementById('step2-btn').disabled = true;
+    }
+
     function doStep2() {
       items.forEach(item => {
         item.planningPriority = item.tog > 0
@@ -614,34 +645,39 @@
           : '100.0';
       });
 
-      let uom = document.querySelector('input[name="uom"]:checked').value;
+      const eligible = items.filter(it => it.newNetFlow < it.tog);
+      if (!eligible.length) {
+        updateAfterStep2UI();
+        document.getElementById('step2-btn').disabled = true;
+        return;
+      }
+      eligible.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
+      const lowest = eligible[0];
+      const neededUnits = lowest.tog - lowest.newNetFlow;
+      const { allocUnits, allocValue } = computeAllocation(neededUnits, lowest);
+      const uom = document.querySelector('input[name="uom"]:checked').value;
+      const costToTOG = (uom === 'Units') ? allocUnits : allocValue;
+
+      if (remainingPool < costToTOG) {
+        equalDistributeToGreen();
+        return;
+      }
+
       while (true) {
-        const eligible = items.filter(it => it.newNetFlow < it.tog);
-        if (!eligible.length) break;
-        eligible.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
-        const targetItem = eligible[0];
-
-        const neededUnits = targetItem.tog - targetItem.newNetFlow;
-        const { allocUnits, allocPallets, allocValue } =
-          computeAllocation(neededUnits, targetItem);
-
-        let stepCost;
-        if (uom === 'Units') {
-          stepCost = targetItem.unitSize;
-        } else {
-          stepCost = targetItem.unitSize * targetItem.unitPrice;
-        }
-
+        const eligibleLoop = items.filter(it => it.newNetFlow < it.tog);
+        if (!eligibleLoop.length) break;
+        eligibleLoop.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
+        const targetItem = eligibleLoop[0];
+        const needed = targetItem.tog - targetItem.newNetFlow;
+        const { allocUnits: au, allocValue: av } = computeAllocation(needed, targetItem);
+        const stepCost = (uom === 'Units') ? targetItem.unitSize : (targetItem.unitSize * targetItem.unitPrice);
         if (remainingPool < stepCost) break;
-
         targetItem.allocation += targetItem.unitSize;
         targetItem.newNetFlow += targetItem.unitSize;
         remainingPool -= stepCost;
-
         if (targetItem.newNetFlow >= targetItem.tog) {
           targetItem.newPriority = 'OTOG';
         }
-
         targetItem.planningPriority = targetItem.tog > 0
           ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
           : '100.0';
@@ -657,13 +693,12 @@
       const avgPriority = (items.reduce((sum, it) => sum + parseFloat(it.planningPriority), 0) / items.length).toFixed(1);
       const resultsContent = document.getElementById('results-content');
       resultsContent.innerHTML = `
-        <p><strong>Step 2 complete:</strong> Balanced fill through GREEN (or as far as possible).<br/>
+        <p><strong>Step 2 complete:</strong> Balanced fill through GREEN (or equal share if insufficient).<br/>
         Used: <strong>${formatRemaining(totalUsed)}</strong>. Remaining: <strong>${formatRemaining(remainingPool)}</strong>.<br/>
         Avg % of TOG: <strong>${avgPriority}%</strong>.</p>
       `;
     }
 
-    // -------------- SUMMARY PANEL --------------
     function updateSummaryPanel() {
       const uom = document.querySelector('input[name="uom"]:checked').value;
       let sumToRed = 0, sumToYellow = 0, sumToGreen = 0, sumRec = 0;
@@ -707,13 +742,12 @@
       return `$${val.toFixed(2)}`;
     }
 
-    // -------------- UoM & AVAILABLE INPUT HANDLERS --------------
     document.querySelectorAll('input[name="uom"]').forEach(radio => {
       radio.addEventListener('change', () => {
         const u = document.querySelector('input[name="uom"]:checked').value;
         document.getElementById('available-label').textContent = `Quantity to Share (in ${u}):`;
         remainingPool = parseFloat(availableInput.value) || 0;
-        resetLogic();  // preserve field edits
+        resetLogic();
       });
     });
     function onAvailableChange() {
@@ -721,18 +755,14 @@
       resetLogic();
     }
 
-    // -------------- BUTTON LISTENERS --------------
     document.getElementById('step1-btn').addEventListener('click', doStep1);
     document.getElementById('step2-btn').addEventListener('click', doStep2);
     document.getElementById('reset-step1-btn').addEventListener('click', () => {
-      // Run resetLogic to revert to “post‐Step1” state (i.e. start state)
       resetLogic();
     });
     document.getElementById('reset-all-btn').addEventListener('click', resetEverything);
 
-    // Initial load
     loadDefaults();
-
   </script>
 </body>
 </html>
