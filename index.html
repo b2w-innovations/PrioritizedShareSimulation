@@ -638,54 +638,81 @@
       document.getElementById('step2-btn').disabled = true;
     }
 
-    function doStep2() {
-      items.forEach(item => {
-        item.planningPriority = item.tog > 0
-          ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
-          : '100.0';
-      });
+	function doStep2() {
+	  // 1) Recompute each item's % of TOG
+	  items.forEach(item => {
+		item.planningPriority = item.tog > 0
+		  ? ((item.newNetFlow / item.tog) * 100).toFixed(1)
+		  : '100.0';
+	  });
 
-      const eligible = items.filter(it => it.newNetFlow < it.tog);
-      if (!eligible.length) {
-        updateAfterStep2UI();
-        document.getElementById('step2-btn').disabled = true;
-        return;
-      }
-      eligible.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
-      const lowest = eligible[0];
-      const neededUnits = lowest.tog - lowest.newNetFlow;
-      const { allocUnits, allocValue } = computeAllocation(neededUnits, lowest);
-      const uom = document.querySelector('input[name="uom"]:checked').value;
-      const costToTOG = (uom === 'Units') ? allocUnits : allocValue;
+	  const uom = document.querySelector('input[name="uom"]:checked').value;
 
-      if (remainingPool < costToTOG) {
-        equalDistributeToGreen();
-        return;
-      }
+	  // 2) First—try to bring everyone to TOG
+	  while (true) {
+		const eligible = items.filter(it => it.newNetFlow < it.tog);
+		if (!eligible.length) break;
+		eligible.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
+		const targetItem = eligible[0];
+		const neededUnits = targetItem.tog - targetItem.newNetFlow;
+		const { allocUnits, allocValue } = computeAllocation(neededUnits, targetItem);
 
-      while (true) {
-        const eligibleLoop = items.filter(it => it.newNetFlow < it.tog);
-        if (!eligibleLoop.length) break;
-        eligibleLoop.sort((a, b) => (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog));
-        const targetItem = eligibleLoop[0];
-        const needed = targetItem.tog - targetItem.newNetFlow;
-        const { allocUnits: au, allocValue: av } = computeAllocation(needed, targetItem);
-        const stepCost = (uom === 'Units') ? targetItem.unitSize : (targetItem.unitSize * targetItem.unitPrice);
-        if (remainingPool < stepCost) break;
-        targetItem.allocation += targetItem.unitSize;
-        targetItem.newNetFlow += targetItem.unitSize;
-        remainingPool -= stepCost;
-        if (targetItem.newNetFlow >= targetItem.tog) {
-          targetItem.newPriority = 'OTOG';
-        }
-        targetItem.planningPriority = targetItem.tog > 0
-          ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
-          : '100.0';
-      }
+		// cost of one more “unitSize” for this item
+		const stepCost = (uom === 'Units')
+		  ? targetItem.unitSize
+		  : (targetItem.unitSize * targetItem.unitPrice);
 
-      updateAfterStep2UI();
-      document.getElementById('step2-btn').disabled = true;
-    }
+		if (remainingPool < stepCost) break;
+
+		targetItem.allocation += targetItem.unitSize;
+		targetItem.newNetFlow += targetItem.unitSize;
+		remainingPool -= stepCost;
+
+		if (targetItem.newNetFlow >= targetItem.tog) {
+		  targetItem.newPriority = 'OTOG';
+		}
+		targetItem.planningPriority = targetItem.tog > 0
+		  ? ((targetItem.newNetFlow / targetItem.tog) * 100).toFixed(1)
+		  : '100.0';
+	  }
+
+	  // 3) Now—if there's still pool left, keep allocating “unitSize” 
+	  //    to whichever part has the lowest (newNetFlow/tog) ratio, until we run out.
+	  while (true) {
+		// find the item with smallest newNetFlow/tog
+		const sorted = items.slice().sort((a, b) => 
+		  (a.newNetFlow / a.tog) - (b.newNetFlow / b.tog)
+		);
+		const candidate = sorted[0];
+		const costOne = (uom === 'Units')
+		  ? candidate.unitSize
+		  : (candidate.unitSize * candidate.unitPrice);
+		if (remainingPool < costOne) break;
+
+		candidate.allocation += candidate.unitSize;
+		candidate.newNetFlow += candidate.unitSize;
+		remainingPool -= costOne;
+		candidate.newPriority = 'OTOG';
+		candidate.planningPriority = candidate.tog > 0
+		  ? ((candidate.newNetFlow / candidate.tog) * 100).toFixed(1)
+		  : '100.0';
+	  }
+
+	  // 4) Finally—update the UI
+	  renderBuffers();
+	  const totalUsed = parseFloat(availableInput.value) - remainingPool;
+	  const avgPriority = (
+		items.reduce((sum, it) => sum + parseFloat(it.planningPriority), 0)
+		/ items.length
+	  ).toFixed(1);
+	  const resultsContent = document.getElementById('results-content');
+	  resultsContent.innerHTML = `
+		<p><strong>Step 2 complete:</strong> Balanced fill through GREEN (and beyond into OTOG until pool exhausted).<br/>
+		Used: <strong>${formatRemaining(totalUsed)}</strong>. Remaining: <strong>${formatRemaining(remainingPool)}</strong>.<br/>
+		Avg % of TOG: <strong>${avgPriority}%</strong>.</p>
+	  `;
+	  document.getElementById('step2-btn').disabled = true;
+	}
 
     function updateAfterStep2UI() {
       renderBuffers();
